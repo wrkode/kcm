@@ -1,0 +1,13 @@
+apiVersion: v2
+name: hetzner-hosted-cp
+description: A Helm chart for deploying Hetzner Cloud clusters with hosted control plane
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+dependencies:
+  - name: cluster-api
+    version: "1.6.1"
+    repository: "oci://registry.k8s.io/cluster-api"
+  - name: cluster-api-provider-hetzner
+    version: "1.0.0"
+    repository: "oci://registry.k8s.io/cluster-api-provider-hetzner" 

@@ -2,72 +2,232 @@
 
 This document describes how to use the Hetzner Cloud provider with KCM.
 
+## Overview
+
+The Hetzner Cloud provider enables you to deploy and manage Kubernetes clusters on Hetzner Cloud infrastructure. It supports both standalone and hosted control plane configurations.
+
 ## Prerequisites
 
 1. A Hetzner Cloud account
 2. An API token with read/write permissions
 3. SSH key uploaded to Hetzner Cloud
+4. The `hcloud` CLI tool (optional but recommended)
+
+## Provider Types
+
+### Standalone Control Plane
+
+The standalone control plane configuration deploys both control plane nodes and worker nodes on Hetzner Cloud instances. This is suitable for:
+- Production environments requiring full control over the control plane
+- Scenarios where control plane customization is needed
+- High-availability requirements with multiple control plane nodes
+
+### Hosted Control Plane
+
+The hosted control plane configuration manages only worker nodes, while the control plane is managed externally. This is suitable for:
+- Development and testing environments
+- Scenarios where simplified management is preferred
+- Cost-optimized deployments
 
 ## Configuration
 
-The following environment variables are required:
+### Common Parameters
 
-- `HCLOUD_TOKEN`: Your Hetzner Cloud API token
-- `HCLOUD_TOKEN_SECRET`: Name of the secret to store the API token (default: "hcloud-token")
-- `HCLOUD_REGION`: The Hetzner Cloud region to deploy to (e.g., "fsn1", "nbg1", "hel1")
-- `SSH_KEY_NAME`: Name of the SSH key in Hetzner Cloud
-- `WORKER_NODE_TYPE`: Node type for worker nodes (e.g., "cx21", "cx31")
-- `NODE_IMAGE`: Image to use for nodes (e.g., "ubuntu-20.04")
+The following environment variables are required for both configurations:
 
-## Network Configuration
+```bash
+# Required
+export HCLOUD_TOKEN="your-token"
+export HCLOUD_TOKEN_SECRET="hcloud-token"
+export NAMESPACE="default"
+export HCLOUD_REGION="fsn1"  # Available: fsn1, nbg1, hel1
+export SSH_KEY_NAME="your-ssh-key"
 
-The provider creates a private network with the CIDR block `10.0.0.0/16` by default. This can be customized in the cluster template.
+# Optional with defaults
+export WORKER_NODE_TYPE="cx21"  # Available: cx21, cx31, cx41, cx51
+export NODE_IMAGE="ubuntu-22.04"
+```
 
-## Load Balancer
+### Network Configuration
 
-The provider automatically creates a load balancer for the control plane when enabled in the cluster template.
+The provider creates a private network with the following default configuration:
+```yaml
+network:
+  cidrBlock: "10.0.0.0/16"    # Network CIDR
+  subnetCidrBlock: "10.0.0.0/24"  # Subnet CIDR
+```
 
-## Example Usage
+### Load Balancer
 
-1. Set up credentials:
-   ```bash
-   export HCLOUD_TOKEN="your-token"
-   export HCLOUD_TOKEN_SECRET="hcloud-token"
-   export NAMESPACE="default"
-   ```
+Load balancer configuration options:
+```yaml
+loadBalancer:
+  enabled: true
+  type: "lb11"  # Available: lb11, lb21, lb31
+```
 
-2. Create a cluster:
-   ```bash
-   export HCLOUD_REGION="fsn1"
-   export SSH_KEY_NAME="your-ssh-key"
-   export WORKER_NODE_TYPE="cx21"
-   export NODE_IMAGE="ubuntu-20.04"
-   ```
+## Example Deployments
 
-## Limitations
+### 1. Basic Standalone Cluster
 
-- The provider currently supports Kubernetes versions compatible with Cluster API v1beta1
-- Load balancer support is limited to Hetzner Cloud Load Balancer products
-- Node types are limited to Hetzner Cloud server types
+```yaml
+# values.yaml
+region: "fsn1"
+sshKeyName: "my-ssh-key"
+clusterIdentity:
+  name: "hcloud-token"
+  kind: "HetznerClusterIdentity"
+
+controlPlaneNumber: 3
+workersNumber: 2
+
+worker:
+  serverType: "cx21"
+  image: "ubuntu-22.04"
+  rootVolume:
+    size: 40
+```
+
+### 2. High-Availability Production Cluster
+
+```yaml
+# values.yaml
+region: "fsn1"
+sshKeyName: "prod-ssh-key"
+clusterIdentity:
+  name: "hcloud-prod-token"
+  kind: "HetznerClusterIdentity"
+
+controlPlaneNumber: 5
+workersNumber: 3
+
+controlPlane:
+  serverType: "cx31"
+  image: "ubuntu-22.04"
+  rootVolume:
+    size: 80
+  placementGroup:
+    enabled: true
+    type: "spread"
+
+worker:
+  serverType: "cx41"
+  image: "ubuntu-22.04"
+  rootVolume:
+    size: 100
+  placementGroup:
+    enabled: true
+    type: "spread"
+
+loadBalancer:
+  enabled: true
+  type: "lb21"
+
+network:
+  cidrBlock: "172.16.0.0/16"
+  subnetCidrBlock: "172.16.0.0/24"
+```
+
+### 3. Development Hosted Control Plane
+
+```yaml
+# values.yaml
+region: "fsn1"
+sshKeyName: "dev-ssh-key"
+clusterIdentity:
+  name: "hcloud-dev-token"
+  kind: "HetznerClusterIdentity"
+
+workersNumber: 2
+
+worker:
+  serverType: "cx21"
+  image: "ubuntu-22.04"
+  rootVolume:
+    size: 40
+```
+
+## Server Types
+
+Available server types and their specifications:
+
+| Type | vCPUs | RAM | Storage | Use Case |
+|------|--------|-----|---------|----------|
+| cx21 | 2 | 4GB | 40GB | Development/Testing |
+| cx31 | 2 | 8GB | 80GB | Small Production |
+| cx41 | 4 | 16GB | 160GB | Medium Production |
+| cx51 | 8 | 32GB | 240GB | Large Production |
+
+## Best Practices
+
+1. **High Availability**
+   - Use at least 3 control plane nodes for production
+   - Enable placement groups for node distribution
+   - Use higher-tier load balancers for production
+
+2. **Networking**
+   - Plan your network CIDR to avoid conflicts
+   - Consider future growth when sizing networks
+   - Use private networks for inter-node communication
+
+3. **Storage**
+   - Size root volumes appropriately for workload
+   - Consider backup strategies
+   - Monitor disk usage
+
+4. **Security**
+   - Use dedicated API tokens per cluster
+   - Rotate API tokens regularly
+   - Keep SSH keys secure
 
 ## Troubleshooting
 
-Common issues and their solutions:
+### Common Issues
 
 1. **API Token Issues**:
-   - Ensure the token has sufficient permissions
-   - Verify the token is correctly stored in the secret
+   ```bash
+   # Verify token permissions
+   hcloud token verify
+
+   # Check token in secret
+   kubectl get secret $HCLOUD_TOKEN_SECRET -n $NAMESPACE -o yaml
+   ```
 
 2. **Network Issues**:
-   - Check if the CIDR block conflicts with existing networks
-   - Verify network policies allow required communication
+   ```bash
+   # Check network creation
+   hcloud network list
+   
+   # Verify subnet allocation
+   hcloud network describe <network-name>
+   ```
 
 3. **Load Balancer Issues**:
-   - Ensure the region supports the selected load balancer type
-   - Check if there are sufficient resources in the project
+   ```bash
+   # List load balancers
+   hcloud load-balancer list
+   
+   # Check load balancer health
+   hcloud load-balancer describe <lb-name>
+   ```
 
-## Support
+### Logging
 
-For issues related to the Hetzner Cloud provider, please check:
+To enable debug logging:
+```yaml
+k0s:
+  api:
+    extraArgs:
+      v: "4"
+```
+
+## Support and Resources
+
 - [Cluster API Provider Hetzner Documentation](https://github.com/syself/cluster-api-provider-hetzner)
-- [Hetzner Cloud Documentation](https://docs.hetzner.com) 
+- [Hetzner Cloud Documentation](https://docs.hetzner.com)
+- [Hetzner Cloud API Documentation](https://docs.hetzner.cloud)
+- [Hetzner Status Page](https://status.hetzner.com)
+
+## Contributing
+
+We welcome contributions to improve the Hetzner Cloud provider. Please submit issues and pull requests to the repository. 
