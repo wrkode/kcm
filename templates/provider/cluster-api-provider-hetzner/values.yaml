@@ -2,4 +2,11 @@ clusterctl:
   providers:
     - name: "hetzner"
       url: "https://github.com/syself/cluster-api-provider-hetzner/releases/v1.0.0"
-      type: "InfrastructureProvider" 
+      type: "InfrastructureProvider"
+
+configSecret:
+  create: false
+  name: ""
+  namespace: ""
+
+config: {} 

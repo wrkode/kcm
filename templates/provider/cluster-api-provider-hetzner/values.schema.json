@@ -23,6 +23,23 @@
           }
         }
       }
+    },
+    "configSecret": {
+      "type": "object",
+      "properties": {
+        "create": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      }
+    },
+    "config": {
+      "type": "object"
     }
   }
 } 
