@@ -31,6 +31,8 @@ kind: HetznerCluster
 metadata:
   name: {{ .Release.Name }}
   namespace: {{ .Release.Namespace }}
+  finalizers:
+    - k0rdent.mirantis.com/cleanup
 spec:
   controlPlaneLoadBalancer:
     {{- toYaml .Values.loadBalancer | nindent 4 }}
