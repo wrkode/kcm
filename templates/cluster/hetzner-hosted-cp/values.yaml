@@ -12,7 +12,7 @@ clusterNetwork:
 clusterLabels: {}
 
 # Hetzner cluster parameters
-region: ""  # e.g., fsn1, nbg1, hel1
+region: "fsn1"  # e.g., fsn1, nbg1, hel1
 sshKeyName: ""
 network:
   cidrBlock: "10.0.0.0/16"
