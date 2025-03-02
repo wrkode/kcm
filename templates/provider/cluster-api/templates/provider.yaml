@@ -2,8 +2,6 @@ apiVersion: operator.cluster.x-k8s.io/v1alpha2
 kind: CoreProvider
 metadata:
   name: cluster-api
-  labels:
-    cluster.x-k8s.io/provider: cluster-api
 spec:
   version: v1.9.5
   {{- if .Values.configSecret.name }}
@@ -11,14 +9,3 @@ spec:
     name: {{ .Values.configSecret.name }}
     namespace: {{ .Values.configSecret.namespace | default .Release.Namespace | trunc 63 }}
   {{- end }}
-  deployment:
-    containers:
-    - name: manager
-      args:
-      - "--metrics-bind-addr=:8080"
-      - "--feature-gates=MachinePool=true"
-      - "--health-probe-bind-address=:9440"
-      - "--leader-elect"
-      {{- with .Values.config.controllerManager }}
-      - "--v={{ fromYaml . | get "verbosity" }}"
-      {{- end }}

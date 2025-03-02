@@ -1,22 +1,6 @@
 configSecret:
-  create: true
-  name: "capi-controller-config"
-  namespace: "system"
+  create: false
+  name: ""
+  namespace: ""
 
-config:
-  controllerManager: |
-    manager:
-      featureGates:
-        MachinePool: true
-      profiling:
-        address: ""
-      healthProbe:
-        port: 9440
-      metrics:
-        bindAddress: ":8080"
-    kubeRbacProxy:
-      image:
-        repository: gcr.io/kubebuilder/kube-rbac-proxy
-        tag: v0.13.1
-    replicas: 1
-    verbosity: 2
+config: {}
