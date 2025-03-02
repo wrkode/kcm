@@ -19,4 +19,6 @@ spec:
       - "--feature-gates=MachinePool=true"
       - "--health-probe-bind-address=:9440"
       - "--leader-elect"
-      - "--v={{ .Values.config.controllerManager.verbosity }}"
+      {{- with .Values.config.controllerManager }}
+      - "--v={{ fromYaml . | get "verbosity" }}"
+      {{- end }}
