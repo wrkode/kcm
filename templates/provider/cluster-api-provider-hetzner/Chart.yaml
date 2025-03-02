@@ -3,11 +3,7 @@ name: cluster-api-provider-hetzner
 description: A Helm chart for Cluster API Provider Hetzner
 type: application
 version: 0.1.0
-appVersion: "1.0.0"
-dependencies:
-  - name: cluster-api
-    version: "1.6.1"
-    repository: "oci://registry.k8s.io/cluster-api"
-  - name: cluster-api-provider-hetzner
-    version: "1.0.0"
-    repository: "oci://registry.k8s.io/cluster-api-provider-hetzner" 
+appVersion: "v1.9.5"
+annotations:
+  cluster.x-k8s.io/provider: infrastructure-hetzner
+  cluster.x-k8s.io/v1beta1: v1beta1
