@@ -1,0 +1,91 @@
+cluster-api-provider-metal3:
+  enabled: true
+  manager:
+    resources:
+      limits:
+        cpu: 100m
+        memory: 250Mi
+      requests:
+        cpu: 100m
+        memory: 150Mi
+  webhooks:
+    enabled: true
+    resources:
+      limits:
+        cpu: 100m
+        memory: 250Mi
+      requests:
+        cpu: 100m
+        memory: 150Mi
+
+bare-metal-operator:
+  enabled: true
+  config:
+    deployIronic: true
+    deployMariaDB: true
+    watchAllNamespaces: true
+  resources:
+    limits:
+      cpu: 200m
+      memory: 300Mi
+    requests:
+      cpu: 100m
+      memory: 200Mi
+  controller:
+    hostNameTemplate: "bmo-host-%d"
+  credentials:
+    auth:
+      username: "admin"
+      password: "change-me"  # Should be overridden in production
+  storage:
+    size: "20Gi"
+    storageClassName: "standard"
+
+ironic:
+  enabled: true
+  global:
+    imageRegistry: "quay.io"
+    imageNamespace: "metal3-io"
+  mariadb:
+    enabled: true
+    auth:
+      rootPassword: "change-me"  # Should be overridden in production
+      database: "ironic"
+      username: "ironic"
+      password: "change-me"  # Should be overridden in production
+  ironic:
+    enabled: true
+    config:
+      dnsmasq:
+        enabled: true
+        dhcpRange: "172.22.0.10,172.22.0.100"  # Should be customized based on network
+      pxe:
+        bootInterface: "eth0"  # Should be customized based on network
+      httpd:
+        enabled: true
+        port: 80
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1Gi
+      requests:
+        cpu: 200m
+        memory: 512Mi
+  inspector:
+    enabled: true
+    resources:
+      limits:
+        cpu: 200m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 256Mi
+  httpboot:
+    enabled: true
+    resources:
+      limits:
+        cpu: 100m
+        memory: 256Mi
+      requests:
+        cpu: 50m
+        memory: 128Mi 

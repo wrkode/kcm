@@ -1,0 +1,49 @@
+cluster-api:
+  enabled: true
+
+cluster-api-provider-metal3:
+  enabled: true
+
+# Cluster configuration
+clusterName: "metal3-cluster"
+namespace: "default"
+
+# Kubernetes version for the cluster
+kubernetesVersion: "v1.28.0"
+
+# Network configuration
+podSubnet: "192.168.0.0/16"
+serviceSubnet: "10.96.0.0/12"
+
+# Control plane configuration
+controlPlaneEndpoint:
+  host: "api.cluster.example.com"
+  port: 6443
+controlPlaneReplicas: 3
+
+# Worker node configuration
+workerReplicas: 3
+
+# Metal3 specific configuration
+metal3:
+  image:
+    url: "http://example.com/ubuntu-focal.qcow2"
+    checksum: "sha256:example-checksum"
+  provisioningNetwork:
+    dhcpRange: "172.22.0.10,172.22.0.100"
+    interface: "eth0"
+  bmo:
+    credentials:
+      username: "admin"
+      password: "change-me"
+    storage:
+      size: "20Gi"
+      storageClassName: "standard"
+  ironic:
+    database:
+      rootPassword: "change-me"
+      username: "ironic"
+      password: "change-me"
+
+# Cloud provider configuration
+noCloudProvider: false 

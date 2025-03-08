@@ -1,0 +1,19 @@
+apiVersion: v2
+name: metal3-hosted-cp
+description: A Helm chart for Metal3 clusters with k0s hosted control plane
+type: application
+version: 0.1.0
+
+dependencies:
+  - name: cluster-api
+    version: ">=1.6.0"
+    repository: oci://registry.k8s.io/cluster-api
+    condition: cluster-api.enabled
+  - name: cluster-api-provider-metal3
+    version: ">=1.6.0"
+    repository: https://kubernetes-sigs.github.io/cluster-api-provider-metal3
+    condition: cluster-api-provider-metal3.enabled
+  - name: k0smotron
+    version: ">=0.8.0"
+    repository: https://k0sproject.github.io/k0smotron
+    condition: k0smotron.enabled 

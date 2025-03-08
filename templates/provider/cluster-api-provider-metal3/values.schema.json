@@ -1,0 +1,148 @@
+{
+  "$schema": "http://json-schema.org/schema#",
+  "type": "object",
+  "properties": {
+    "clusterName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "namespace": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kubernetesVersion": {
+      "type": "string",
+      "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "k0sVersion": {
+      "type": "string",
+      "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "controlPlaneReplicas": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 7
+    },
+    "workerReplicas": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "podSubnet": {
+      "type": "string",
+      "format": "ipv4"
+    },
+    "serviceSubnet": {
+      "type": "string",
+      "format": "ipv4"
+    },
+    "controlPlaneEndpoint": {
+      "type": "object",
+      "properties": {
+        "host": {
+          "type": "string",
+          "format": "hostname"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        }
+      },
+      "required": ["host", "port"]
+    },
+    "metal3": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "checksum": {
+              "type": "string"
+            }
+          },
+          "required": ["url", "checksum"]
+        },
+        "provisioningNetwork": {
+          "type": "object",
+          "properties": {
+            "dhcpRange": {
+              "type": "string",
+              "pattern": "^([0-9]{1,3}\\.){3}[0-9]{1,3},([0-9]{1,3}\\.){3}[0-9]{1,3}$"
+            },
+            "interface": {
+              "type": "string"
+            }
+          }
+        },
+        "bmo": {
+          "type": "object",
+          "properties": {
+            "credentials": {
+              "type": "object",
+              "properties": {
+                "username": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "password": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "storage": {
+              "type": "object",
+              "properties": {
+                "size": {
+                  "type": "string",
+                  "pattern": "^[0-9]+[MGT]i$"
+                },
+                "storageClassName": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "ironic": {
+          "type": "object",
+          "properties": {
+            "database": {
+              "type": "object",
+              "properties": {
+                "rootPassword": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "username": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "password": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": ["image"]
+    },
+    "noCloudProvider": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "clusterName",
+    "namespace",
+    "podSubnet",
+    "serviceSubnet",
+    "controlPlaneEndpoint",
+    "metal3"
+  ]
+} 

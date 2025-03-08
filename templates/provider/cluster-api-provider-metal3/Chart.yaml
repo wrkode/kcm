@@ -1,0 +1,18 @@
+apiVersion: v2
+name: cluster-api-provider-metal3
+description: A Helm chart for Cluster API Metal3 Provider
+type: application
+version: 0.1.0
+dependencies:
+  - name: cluster-api-provider-metal3
+    version: 1.6.0
+    repository: https://kubernetes-sigs.github.io/cluster-api-provider-metal3
+    condition: cluster-api-provider-metal3.enabled
+  - name: bare-metal-operator
+    version: 0.5.0
+    repository: https://metal3-io.github.io/bare-metal-operator
+    condition: bare-metal-operator.enabled
+  - name: ironic
+    version: 0.5.0
+    repository: https://metal3-io.github.io/ironic-charts
+    condition: ironic.enabled 

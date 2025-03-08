@@ -1,0 +1,153 @@
+apiVersion: v2
+name: metal3-k0s-hosted
+description: A template for Metal3 clusters with k0s hosted control plane
+type: application
+
+dependencies:
+  - name: cluster-api
+    version: ">=1.6.0"
+    repository: oci://registry.k8s.io/cluster-api
+    condition: cluster-api.enabled
+  - name: cluster-api-provider-metal3
+    version: ">=1.6.0"
+    repository: https://kubernetes-sigs.github.io/cluster-api-provider-metal3
+    condition: cluster-api-provider-metal3.enabled
+  - name: k0smotron
+    version: ">=0.8.0"
+    repository: https://k0sproject.github.io/k0smotron
+    condition: k0smotron.enabled
+
+values:
+  cluster-api:
+    enabled: true
+  cluster-api-provider-metal3:
+    enabled: true
+  k0smotron:
+    enabled: true
+
+templates:
+  cluster.yaml: |
+    apiVersion: cluster.x-k8s.io/v1beta1
+    kind: Cluster
+    metadata:
+      name: {{ .Values.clusterName }}
+      namespace: {{ .Values.namespace }}
+    spec:
+      clusterNetwork:
+        services:
+          cidrBlocks: ["{{ .Values.serviceSubnet }}"]
+        pods:
+          cidrBlocks: ["{{ .Values.podSubnet }}"]
+        serviceDomain: "cluster.local"
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        kind: Metal3Cluster
+        name: {{ .Values.clusterName }}
+      controlPlaneRef:
+        apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+        kind: K0smotronControlPlane
+        name: {{ .Values.clusterName }}-control-plane
+
+    ---
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: Metal3Cluster
+    metadata:
+      name: {{ .Values.clusterName }}
+      namespace: {{ .Values.namespace }}
+    spec:
+      controlPlaneEndpoint:
+        host: {{ .Values.controlPlaneEndpoint.host }}
+        port: {{ .Values.controlPlaneEndpoint.port }}
+      noCloudProvider: {{ .Values.noCloudProvider | default false }}
+
+    ---
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: K0smotronControlPlane
+    metadata:
+      name: {{ .Values.clusterName }}-control-plane
+      namespace: {{ .Values.namespace }}
+    spec:
+      version: {{ .Values.k0sVersion }}
+      persistence:
+        type: emptyDir
+      service:
+        type: LoadBalancer
+      k0s:
+        dynamicConfig: false
+        config:
+          apiVersion: k0s.k0sproject.io/v1beta1
+          kind: ClusterConfig
+          metadata:
+            name: k0s
+          spec:
+            api:
+              extraArgs:
+                cloud-provider: external
+            installConfig:
+              users:
+                etcdUser: etcd
+            storage:
+              type: etcd
+            network:
+              provider: kuberouter
+              podCIDR: {{ .Values.podSubnet }}
+              serviceCIDR: {{ .Values.serviceSubnet }}
+              calico: null
+            telemetry:
+              enabled: false
+
+    ---
+    apiVersion: cluster.x-k8s.io/v1beta1
+    kind: MachineDeployment
+    metadata:
+      name: {{ .Values.clusterName }}-md-0
+      namespace: {{ .Values.namespace }}
+    spec:
+      clusterName: {{ .Values.clusterName }}
+      replicas: {{ .Values.workerReplicas }}
+      selector:
+        matchLabels:
+          cluster.x-k8s.io/cluster-name: {{ .Values.clusterName }}
+          pool: worker
+      template:
+        metadata:
+          labels:
+            cluster.x-k8s.io/cluster-name: {{ .Values.clusterName }}
+            pool: worker
+        spec:
+          bootstrap:
+            configRef:
+              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+              kind: K0sWorkerConfig
+              name: {{ .Values.clusterName }}-md-0
+          clusterName: {{ .Values.clusterName }}
+          infrastructureRef:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: Metal3Machine
+            name: {{ .Values.clusterName }}-md-0
+          version: {{ .Values.k0sVersion }}
+
+    ---
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: Metal3Machine
+    metadata:
+      name: {{ .Values.clusterName }}-md-0
+      namespace: {{ .Values.namespace }}
+    spec:
+      image:
+        url: {{ .Values.metal3.image.url }}
+        checksum: {{ .Values.metal3.image.checksum }}
+      hostSelector:
+        matchLabels:
+          metal3.io/role: worker
+
+    ---
+    apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+    kind: K0sWorkerConfig
+    metadata:
+      name: {{ .Values.clusterName }}-md-0
+      namespace: {{ .Values.namespace }}
+    spec:
+      version: {{ .Values.k0sVersion }}
+      args:
+        - --enable-cloud-provider 
