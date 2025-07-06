@@ -29,8 +29,8 @@ chmod +x scripts/setup-aks-adoption.sh
 ### Step 1: Get Your AKS Kubeconfig
 
 ```bash
-# Get the kubeconfig for your existing AKS cluster
-az aks get-credentials --resource-group <your-resource-group> --name <your-cluster-name> --file ~/.kube/aks-cluster-config
+# Get the kubeconfig for your existing AKS cluster (downloads to file without changing context)
+az aks get-credentials --resource-group <your-resource-group> --name <your-cluster-name> --file ~/.kube/aks-cluster-config --overwrite-existing
 ```
 
 ### Step 2: Create the Kubeconfig Secret

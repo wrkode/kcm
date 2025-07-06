@@ -26,7 +26,7 @@ echo ""
 # Step 1: Get the kubeconfig
 echo "Step 1: Getting AKS cluster kubeconfig..."
 TEMP_KUBECONFIG=$(mktemp)
-az aks get-credentials --resource-group "$RESOURCE_GROUP" --name "$CLUSTER_NAME" --file "$TEMP_KUBECONFIG"
+az aks get-credentials --resource-group "$RESOURCE_GROUP" --name "$CLUSTER_NAME" --file "$TEMP_KUBECONFIG" --overwrite-existing
 
 if [ ! -f "$TEMP_KUBECONFIG" ]; then
     echo "❌ Error: Failed to get kubeconfig"
