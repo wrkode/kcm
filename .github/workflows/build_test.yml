@@ -208,7 +208,7 @@ jobs:
     permissions:
       packages: write
     env:
-      REGISTRY_REPO: oci://ghcr.io/wrkode/kcm/charts-ci
+      REGISTRY_REPO: oci://ghcr.io/k0rdent/kcm/charts-ci
     steps:
       - name: Checkout repository
         if: ${{ needs.authorize.outputs.public_repo == 'true' }}
@@ -245,7 +245,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REGISTRY: ghcr.io/wrkode/kcm
+          REGISTRY: ghcr.io/k0rdent/kcm
           IMAGE_NAME: controller-ci
           VERSION: ${{ needs.lint-test.outputs.version }}
           SKIP_SCM_RELEASE: true
@@ -290,8 +290,8 @@ jobs:
       - name: Set public registry env variables
         if: ${{ env.PUBLIC_REPO == 'true' }}
         run: |
-          echo "REGISTRY_REPO=oci://ghcr.io/wrkode/kcm/charts-ci" >> $GITHUB_ENV
-          echo "IMG=ghcr.io/wrkode/kcm/controller-ci:${{ needs.lint-test.outputs.version }}" >> $GITHUB_ENV
+          echo "REGISTRY_REPO=oci://ghcr.io/k0rdent/kcm/charts-ci" >> $GITHUB_ENV
+          echo "IMG=ghcr.io/k0rdent/kcm/controller-ci:${{ needs.lint-test.outputs.version }}" >> $GITHUB_ENV
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -370,8 +370,8 @@ jobs:
       - name: Set public registry env variables
         if: ${{ env.PUBLIC_REPO == 'true' }}
         run: |
-          echo "REGISTRY_REPO=oci://ghcr.io/wrkode/kcm/charts-ci" >> $GITHUB_ENV
-          echo "IMG=ghcr.io/wrkode/kcm/controller-ci:${{ needs.lint-test.outputs.version }}" >> $GITHUB_ENV
+          echo "REGISTRY_REPO=oci://ghcr.io/k0rdent/kcm/charts-ci" >> $GITHUB_ENV
+          echo "IMG=ghcr.io/k0rdent/kcm/controller-ci:${{ needs.lint-test.outputs.version }}" >> $GITHUB_ENV
 
       - name: Checkout repository
         uses: actions/checkout@v4

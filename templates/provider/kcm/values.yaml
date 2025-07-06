@@ -1,11 +1,9 @@
 nameOverride: ""
 fullnameOverride: ""
-
 admissionWebhook:
   # enabled: false # WARN: setting the default value to false actually disables the WH; setting to true does not allow to install the KCM chart due to missing cert-manager CRDs
   port: 9443
   certDir: "/tmp/k8s-webhook-server/serving-certs/"
-
 controller:
   templatesRepoURL: "oci://ghcr.io/wrkode/kcm/charts"
   globalRegistry: ""
@@ -32,18 +30,15 @@ controller:
     time-encoding: rfc3339 # @schema enum:[epoch, millis, nano, iso8601, rfc3339, rfc3339nano, ""] ; type: string
   debug:
     pprofBindAddress: "" # @schema type: string; title: Set pprof binding address; description: The TCP address that the controller should bind to for serving pprof, '0' or empty value disables pprof; pattern: (?:^0?$)|(?:^(?:[\w.-]+(?:\.?[\w\.-]+)+)?:(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$)
-
 containerSecurityContext:
   allowPrivilegeEscalation: false
   capabilities:
     drop:
       - ALL
-
 image:
-  repository: ghcr.io/wrkode/kcm/controller
+  repository: ghcr.io/wrkode/controller
   tag: 1.1.2
   pullPolicy: IfNotPresent
-
 resources:
   limits:
     cpu: 500m
@@ -51,12 +46,9 @@ resources:
   requests:
     cpu: 10m
     memory: 64Mi
-
 replicas: 1
-
 serviceAccount:
   annotations: {}
-
 kubernetesClusterDomain: cluster.local
 metricsService:
   ports:
@@ -65,14 +57,12 @@ metricsService:
       protocol: TCP
       targetPort: 8080
   type: ClusterIP
-
 # Subcharts
 cert-manager:
   enabled: true
   crds:
     enabled: true
     keep: false
-
 flux2:
   enabled: true
   policies:
@@ -93,7 +83,6 @@ flux2:
     container:
       additionalArgs:
         - --watch-label-selector=k0rdent.mirantis.com/managed=true
-
 cluster-api-operator:
   enabled: false
   resources:
@@ -104,7 +93,6 @@ cluster-api-operator:
       requests:
         cpu: 200m
         memory: 150Mi
-
 velero:
   enabled: true
   # example of enabling a plugin

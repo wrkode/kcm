@@ -47,7 +47,7 @@ jobs:
         run: VERSION="${{ steps.version.outputs.version }}" make kcm-chart-release
 
       - name: Push charts to GHCR
-        run: VERSION="${{ steps.version.outputs.version }}" REGISTRY_REPO="oci://ghcr.io/wrkode/kcm/charts" make helm-push
+        run: VERSION="${{ steps.version.outputs.version }}" REGISTRY_REPO="oci://ghcr.io/k0rdent/kcm/charts" make helm-push
 
       - name: Get Components Versions
         id: get_versions
@@ -75,7 +75,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REGISTRY: ghcr.io/wrkode/kcm
+          REGISTRY: ghcr.io/k0rdent/kcm
           IMAGE_NAME: controller
           VERSION: ${{ steps.version.outputs.version }}
           SEGMENT_TOKEN: ${{ secrets.SEGMENT_TOKEN }}
