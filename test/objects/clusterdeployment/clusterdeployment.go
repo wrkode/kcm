@@ -106,3 +106,9 @@ func WithAvailableUpgrades(availableUpgrades []string) Opt {
 		p.Status.AvailableUpgrades = availableUpgrades
 	}
 }
+
+func WithAdoptedCluster(adoptedCluster *kcmv1.AdoptedClusterConfig) Opt {
+	return func(p *kcmv1.ClusterDeployment) {
+		p.Spec.AdoptedCluster = adoptedCluster
+	}
+}

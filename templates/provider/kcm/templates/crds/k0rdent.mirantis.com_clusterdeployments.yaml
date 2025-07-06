@@ -638,6 +638,338 @@ spec:
           spec:
             description: ClusterDeploymentSpec defines the desired state of ClusterDeployment
             properties:
+              adoptedCluster:
+                description: |-
+                  AdoptedCluster defines configuration for adopted cluster lifecycle management.
+                  This enables full infrastructure lifecycle management for adopted clusters.
+                properties:
+                  discoveryMode:
+                    default: auto
+                    description: DiscoveryMode defines how infrastructure should be
+                      discovered.
+                    enum:
+                    - auto
+                    - manual
+                    type: string
+                  enabled:
+                    default: false
+                    description: Enabled indicates whether adopted cluster lifecycle
+                      management is enabled.
+                    type: boolean
+                  infrastructureMapping:
+                    description: InfrastructureMapping defines the mapping of existing
+                      infrastructure.
+                    properties:
+                      credentials:
+                        description: Credentials specifies the credentials for cloud
+                          provider access.
+                        properties:
+                          namespace:
+                            default: default
+                            description: Namespace specifies the namespace where the
+                              secret is located.
+                            type: string
+                          secretName:
+                            description: SecretName specifies the name of the secret
+                              containing cloud credentials.
+                            type: string
+                        required:
+                        - secretName
+                        type: object
+                      nodeMapping:
+                        description: NodeMapping defines how existing nodes should
+                          be mapped to CAPI Machine resources.
+                        items:
+                          description: NodeMapping defines how an existing node should
+                            be mapped to a CAPI Machine resource.
+                          properties:
+                            infrastructureRef:
+                              description: InfrastructureRef specifies the infrastructure
+                                reference for the machine.
+                              properties:
+                                apiVersion:
+                                  description: APIVersion specifies the API version
+                                    of the infrastructure resource.
+                                  type: string
+                                kind:
+                                  description: Kind specifies the kind of the infrastructure
+                                    resource.
+                                  type: string
+                                name:
+                                  description: Name specifies the name of the infrastructure
+                                    resource.
+                                  type: string
+                              required:
+                              - apiVersion
+                              - kind
+                              - name
+                              type: object
+                            machineName:
+                              description: MachineName specifies the name for the
+                                generated CAPI Machine resource.
+                              type: string
+                            nodeName:
+                              description: NodeName specifies the name of the existing
+                                node.
+                              type: string
+                          required:
+                          - machineName
+                          - nodeName
+                          type: object
+                        type: array
+                      provider:
+                        description: Provider specifies the cloud provider for the
+                          adopted cluster.
+                        enum:
+                        - aws
+                        - azure
+                        - gcp
+                        - vsphere
+                        - openstack
+                        - unknown
+                        type: string
+                      region:
+                        description: Region specifies the cloud region where the cluster
+                          is located.
+                        type: string
+                    required:
+                    - provider
+                    type: object
+                  lifecycleManagement:
+                    description: LifecycleManagement defines lifecycle management
+                      capabilities.
+                    properties:
+                      backup:
+                        description: Backup defines backup capabilities for the adopted
+                          cluster.
+                        properties:
+                          enabled:
+                            default: false
+                            description: Enabled indicates whether backup is enabled.
+                            type: boolean
+                          retention:
+                            description: Retention specifies how long to retain backups.
+                            type: string
+                          schedule:
+                            description: Schedule specifies the backup schedule in
+                              cron format.
+                            type: string
+                          storage:
+                            description: Storage defines backup storage configuration.
+                            properties:
+                              credentials:
+                                description: Credentials specifies credentials for
+                                  storage access.
+                                properties:
+                                  namespace:
+                                    default: default
+                                    description: Namespace specifies the namespace
+                                      where the secret is located.
+                                    type: string
+                                  secretName:
+                                    description: SecretName specifies the name of
+                                      the secret containing cloud credentials.
+                                    type: string
+                                required:
+                                - secretName
+                                type: object
+                              location:
+                                description: Location specifies the storage location.
+                                type: string
+                              type:
+                                description: Type specifies the storage type.
+                                enum:
+                                - s3
+                                - gcs
+                                - azure
+                                - local
+                                type: string
+                            required:
+                            - location
+                            - type
+                            type: object
+                        required:
+                        - enabled
+                        type: object
+                      enabled:
+                        default: false
+                        description: Enabled indicates whether lifecycle management
+                          is enabled.
+                        type: boolean
+                      monitoring:
+                        description: Monitoring defines monitoring capabilities for
+                          the adopted cluster.
+                        properties:
+                          enabled:
+                            default: false
+                            description: Enabled indicates whether monitoring is enabled.
+                            type: boolean
+                          healthChecks:
+                            description: HealthChecks defines health check configurations.
+                            properties:
+                              enabled:
+                                default: true
+                                description: Enabled indicates whether health checks
+                                  are enabled.
+                                type: boolean
+                              failureThreshold:
+                                default: 3
+                                description: FailureThreshold specifies the number
+                                  of failures before marking unhealthy.
+                                format: int32
+                                minimum: 1
+                                type: integer
+                              interval:
+                                default: 30s
+                                description: Interval specifies the health check interval.
+                                type: string
+                              timeout:
+                                default: 10s
+                                description: Timeout specifies the health check timeout.
+                                type: string
+                            required:
+                            - enabled
+                            type: object
+                          metrics:
+                            description: Metrics defines which metrics to collect.
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - enabled
+                        type: object
+                      scaling:
+                        description: Scaling defines scaling capabilities for the
+                          adopted cluster.
+                        properties:
+                          autoScaling:
+                            default: false
+                            description: AutoScaling indicates whether auto-scaling
+                              is enabled.
+                            type: boolean
+                          enabled:
+                            default: false
+                            description: Enabled indicates whether scaling is enabled.
+                            type: boolean
+                          maxNodes:
+                            description: MaxNodes specifies the maximum number of
+                              nodes.
+                            format: int32
+                            minimum: 1
+                            type: integer
+                          minNodes:
+                            description: MinNodes specifies the minimum number of
+                              nodes.
+                            format: int32
+                            minimum: 1
+                            type: integer
+                          nodeGroups:
+                            description: NodeGroups defines different node groups
+                              for scaling.
+                            items:
+                              description: NodeGroup defines a group of nodes with
+                                similar characteristics.
+                              properties:
+                                instanceType:
+                                  description: InstanceType specifies the instance
+                                    type for new nodes.
+                                  type: string
+                                labels:
+                                  additionalProperties:
+                                    type: string
+                                  description: Labels specifies labels to apply to
+                                    nodes in this group.
+                                  type: object
+                                maxNodes:
+                                  description: MaxNodes specifies the maximum number
+                                    of nodes in this group.
+                                  format: int32
+                                  minimum: 1
+                                  type: integer
+                                minNodes:
+                                  description: MinNodes specifies the minimum number
+                                    of nodes in this group.
+                                  format: int32
+                                  minimum: 0
+                                  type: integer
+                                name:
+                                  description: Name specifies the name of the node
+                                    group.
+                                  type: string
+                                taints:
+                                  description: Taints specifies taints to apply to
+                                    nodes in this group.
+                                  items:
+                                    description: Taint defines a taint to apply to
+                                      nodes.
+                                    properties:
+                                      effect:
+                                        description: Effect specifies the taint effect.
+                                        enum:
+                                        - NoSchedule
+                                        - PreferNoSchedule
+                                        - NoExecute
+                                        type: string
+                                      key:
+                                        description: Key specifies the taint key.
+                                        type: string
+                                      value:
+                                        description: Value specifies the taint value.
+                                        type: string
+                                    required:
+                                    - effect
+                                    - key
+                                    type: object
+                                  type: array
+                              required:
+                              - name
+                              type: object
+                            type: array
+                        required:
+                        - autoScaling
+                        - enabled
+                        type: object
+                      upgrades:
+                        description: Upgrades defines upgrade capabilities for the
+                          adopted cluster.
+                        properties:
+                          autoUpgrade:
+                            default: false
+                            description: AutoUpgrade indicates whether automatic upgrades
+                              are enabled.
+                            type: boolean
+                          enabled:
+                            default: false
+                            description: Enabled indicates whether upgrades are enabled.
+                            type: boolean
+                          maintenanceWindow:
+                            description: MaintenanceWindow specifies the maintenance
+                              window for upgrades.
+                            type: string
+                          maxUnavailable:
+                            description: MaxUnavailable specifies the maximum number
+                              of unavailable nodes during upgrade.
+                            format: int32
+                            minimum: 1
+                            type: integer
+                          upgradeStrategy:
+                            default: rolling
+                            description: UpgradeStrategy specifies the upgrade strategy
+                              to use.
+                            enum:
+                            - rolling
+                            - in-place
+                            type: string
+                        required:
+                        - autoUpgrade
+                        - enabled
+                        type: object
+                    required:
+                    - enabled
+                    type: object
+                required:
+                - enabled
+                type: object
               config:
                 description: |-
                   Config allows to provide parameters for template customization.
@@ -1060,6 +1392,385 @@ spec:
           status:
             description: ClusterDeploymentStatus defines the observed state of ClusterDeployment
             properties:
+              adoptedClusterStatus:
+                description: AdoptedClusterStatus contains status information for
+                  adopted cluster lifecycle management.
+                properties:
+                  backupStatus:
+                    description: BackupStatus contains status information for backup
+                      operations.
+                    properties:
+                      backupOperations:
+                        description: BackupOperations contains information about recent
+                          backup operations.
+                        items:
+                          description: BackupOperation defines a backup operation.
+                          properties:
+                            location:
+                              description: Location indicates the location of the
+                                backup.
+                              type: string
+                            message:
+                              description: Message provides additional information
+                                about the backup operation.
+                              type: string
+                            size:
+                              description: Size indicates the size of the backup.
+                              type: string
+                            status:
+                              description: Status indicates the status of this backup
+                                operation.
+                              type: string
+                            timestamp:
+                              description: Timestamp indicates when the backup operation
+                                was performed.
+                              format: date-time
+                              type: string
+                            type:
+                              description: Type specifies the type of backup operation.
+                              enum:
+                              - full
+                              - incremental
+                              type: string
+                          required:
+                          - status
+                          - timestamp
+                          - type
+                          type: object
+                        type: array
+                      lastBackupTime:
+                        description: LastBackupTime indicates when the last backup
+                          was performed.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message provides additional information about
+                          the backup status.
+                        type: string
+                      phase:
+                        description: Phase indicates the current phase of backup.
+                        enum:
+                        - NotStarted
+                        - InProgress
+                        - Completed
+                        - Failed
+                        type: string
+                    required:
+                    - phase
+                    type: object
+                  capiStatus:
+                    description: CAPIStatus contains status information for CAPI integration.
+                    properties:
+                      generatedResources:
+                        description: GeneratedResources contains information about
+                          generated CAPI resources.
+                        items:
+                          description: GeneratedResource defines a generated CAPI
+                            resource.
+                          properties:
+                            apiVersion:
+                              description: APIVersion specifies the API version of
+                                the generated resource.
+                              type: string
+                            kind:
+                              description: Kind specifies the kind of the generated
+                                resource.
+                              type: string
+                            name:
+                              description: Name specifies the name of the generated
+                                resource.
+                              type: string
+                            namespace:
+                              description: Namespace specifies the namespace of the
+                                generated resource.
+                              type: string
+                            status:
+                              description: Status indicates the status of this resource.
+                              type: string
+                          required:
+                          - apiVersion
+                          - kind
+                          - name
+                          type: object
+                        type: array
+                      lastSyncTime:
+                        description: LastSyncTime indicates when the last CAPI sync
+                          was performed.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message provides additional information about
+                          the CAPI integration status.
+                        type: string
+                      phase:
+                        description: Phase indicates the current phase of CAPI integration.
+                        enum:
+                        - NotStarted
+                        - InProgress
+                        - Completed
+                        - Failed
+                        type: string
+                    required:
+                    - phase
+                    type: object
+                  discoveryStatus:
+                    description: DiscoveryStatus contains status information for infrastructure
+                      discovery.
+                    properties:
+                      discoveredResources:
+                        description: DiscoveredResources contains information about
+                          discovered infrastructure resources.
+                        items:
+                          description: DiscoveredResource defines a discovered infrastructure
+                            resource.
+                          properties:
+                            name:
+                              description: Name specifies the name of the discovered
+                                resource.
+                              type: string
+                            provider:
+                              description: Provider specifies the cloud provider for
+                                this resource.
+                              type: string
+                            region:
+                              description: Region specifies the region where this
+                                resource is located.
+                              type: string
+                            status:
+                              description: Status indicates the status of this resource.
+                              type: string
+                            type:
+                              description: Type specifies the type of discovered resource.
+                              type: string
+                          required:
+                          - name
+                          - type
+                          type: object
+                        type: array
+                      lastDiscoveryTime:
+                        description: LastDiscoveryTime indicates when the last discovery
+                          was performed.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message provides additional information about
+                          the discovery status.
+                        type: string
+                      phase:
+                        description: Phase indicates the current phase of discovery.
+                        enum:
+                        - NotStarted
+                        - InProgress
+                        - Completed
+                        - Failed
+                        type: string
+                    required:
+                    - phase
+                    type: object
+                  monitoringStatus:
+                    description: MonitoringStatus contains status information for
+                      monitoring.
+                    properties:
+                      healthStatus:
+                        description: HealthStatus indicates the overall health status
+                          of the cluster.
+                        type: string
+                      lastHealthCheckTime:
+                        description: LastHealthCheckTime indicates when the last health
+                          check was performed.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message provides additional information about
+                          the monitoring status.
+                        type: string
+                      metrics:
+                        description: Metrics contains collected metrics information.
+                        items:
+                          description: MetricInfo defines metric information.
+                          properties:
+                            name:
+                              description: Name specifies the name of the metric.
+                              type: string
+                            timestamp:
+                              description: Timestamp indicates when this metric was
+                                collected.
+                              format: date-time
+                              type: string
+                            unit:
+                              description: Unit specifies the unit of the metric.
+                              type: string
+                            value:
+                              description: Value specifies the current value of the
+                                metric.
+                              type: string
+                          required:
+                          - name
+                          - timestamp
+                          type: object
+                        type: array
+                      phase:
+                        description: Phase indicates the current phase of monitoring.
+                        enum:
+                        - NotStarted
+                        - InProgress
+                        - Completed
+                        - Failed
+                        type: string
+                    required:
+                    - phase
+                    type: object
+                  scalingStatus:
+                    description: ScalingStatus contains status information for scaling
+                      operations.
+                    properties:
+                      currentNodes:
+                        description: CurrentNodes indicates the current number of
+                          nodes.
+                        format: int32
+                        type: integer
+                      desiredNodes:
+                        description: DesiredNodes indicates the desired number of
+                          nodes.
+                        format: int32
+                        type: integer
+                      lastScalingTime:
+                        description: LastScalingTime indicates when the last scaling
+                          operation was performed.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message provides additional information about
+                          the scaling status.
+                        type: string
+                      phase:
+                        description: Phase indicates the current phase of scaling.
+                        enum:
+                        - NotStarted
+                        - InProgress
+                        - Completed
+                        - Failed
+                        type: string
+                      scalingOperations:
+                        description: ScalingOperations contains information about
+                          recent scaling operations.
+                        items:
+                          description: ScalingOperation defines a scaling operation.
+                          properties:
+                            fromNodes:
+                              description: FromNodes indicates the number of nodes
+                                before scaling.
+                              format: int32
+                              type: integer
+                            message:
+                              description: Message provides additional information
+                                about the scaling operation.
+                              type: string
+                            status:
+                              description: Status indicates the status of this scaling
+                                operation.
+                              type: string
+                            timestamp:
+                              description: Timestamp indicates when the scaling operation
+                                was performed.
+                              format: date-time
+                              type: string
+                            toNodes:
+                              description: ToNodes indicates the number of nodes after
+                                scaling.
+                              format: int32
+                              type: integer
+                            type:
+                              description: Type specifies the type of scaling operation.
+                              enum:
+                              - scale-up
+                              - scale-down
+                              type: string
+                          required:
+                          - fromNodes
+                          - status
+                          - timestamp
+                          - toNodes
+                          - type
+                          type: object
+                        type: array
+                    required:
+                    - phase
+                    type: object
+                  upgradeStatus:
+                    description: UpgradeStatus contains status information for upgrade
+                      operations.
+                    properties:
+                      currentVersion:
+                        description: CurrentVersion indicates the current Kubernetes
+                          version.
+                        type: string
+                      lastUpgradeTime:
+                        description: LastUpgradeTime indicates when the last upgrade
+                          was performed.
+                        format: date-time
+                        type: string
+                      message:
+                        description: Message provides additional information about
+                          the upgrade status.
+                        type: string
+                      phase:
+                        description: Phase indicates the current phase of upgrade.
+                        enum:
+                        - NotStarted
+                        - InProgress
+                        - Completed
+                        - Failed
+                        type: string
+                      targetVersion:
+                        description: TargetVersion indicates the target Kubernetes
+                          version for upgrade.
+                        type: string
+                      upgradeOperations:
+                        description: UpgradeOperations contains information about
+                          recent upgrade operations.
+                        items:
+                          description: UpgradeOperation defines an upgrade operation.
+                          properties:
+                            fromVersion:
+                              description: FromVersion indicates the version before
+                                upgrade.
+                              type: string
+                            message:
+                              description: Message provides additional information
+                                about the upgrade operation.
+                              type: string
+                            status:
+                              description: Status indicates the status of this upgrade
+                                operation.
+                              type: string
+                            timestamp:
+                              description: Timestamp indicates when the upgrade operation
+                                was performed.
+                              format: date-time
+                              type: string
+                            toVersion:
+                              description: ToVersion indicates the version after upgrade.
+                              type: string
+                            type:
+                              description: Type specifies the type of upgrade operation.
+                              enum:
+                              - control-plane
+                              - node-pool
+                              - infrastructure
+                              type: string
+                          required:
+                          - fromVersion
+                          - status
+                          - timestamp
+                          - toVersion
+                          - type
+                          type: object
+                        type: array
+                    required:
+                    - phase
+                    type: object
+                type: object
               availableUpgrades:
                 description: |-
                   AvailableUpgrades is the list of ClusterTemplate names to which

@@ -1,0 +1,103 @@
+# Copyright 2025
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ClusterDeployment
+metadata:
+  name: adopted-cluster-example
+  namespace: default
+spec:
+  template: adopted-cluster
+  credential: aws-credentials
+  adoptedCluster:
+    enabled: true
+    discoveryMode: "auto"  # or "manual"
+    infrastructureMapping:
+      provider: "aws"
+      region: "us-west-2"
+      credentials:
+        secretName: "aws-credentials"
+        namespace: "default"
+      nodeMapping:
+        - nodeName: "worker-node-1"
+          machineName: "worker-machine-1"
+          infrastructureRef:
+            apiVersion: "infrastructure.cluster.x-k8s.io/v1beta1"
+            kind: "AWSMachine"
+            name: "worker-machine-1"
+        - nodeName: "worker-node-2"
+          machineName: "worker-machine-2"
+          infrastructureRef:
+            apiVersion: "infrastructure.cluster.x-k8s.io/v1beta1"
+            kind: "AWSMachine"
+            name: "worker-machine-2"
+        - nodeName: "control-plane-node-1"
+          machineName: "control-plane-machine-1"
+          infrastructureRef:
+            apiVersion: "infrastructure.cluster.x-k8s.io/v1beta1"
+            kind: "AWSMachine"
+            name: "control-plane-machine-1"
+    lifecycleManagement:
+      enabled: true
+      scaling:
+        enabled: true
+        autoScaling: true
+        minNodes: 2
+        maxNodes: 10
+        nodeGroups:
+          - name: "worker-nodes"
+            instanceType: "t3.medium"
+            minNodes: 2
+            maxNodes: 8
+            labels:
+              node-role.kubernetes.io/worker: "true"
+            taints: []
+          - name: "control-plane-nodes"
+            instanceType: "t3.small"
+            minNodes: 1
+            maxNodes: 3
+            labels:
+              node-role.kubernetes.io/control-plane: "true"
+            taints:
+              - key: "node-role.kubernetes.io/control-plane"
+                effect: "NoSchedule"
+      upgrades:
+        enabled: true
+        autoUpgrade: false
+        maintenanceWindow: "0 2 * * 0"  # Sundays at 2 AM
+        upgradeStrategy: "rolling"
+        maxUnavailable: 1
+      monitoring:
+        enabled: true
+        metrics:
+          - "cpu_usage_percent"
+          - "memory_usage_percent"
+          - "disk_usage_percent"
+          - "node_count"
+          - "pod_count"
+        healthChecks:
+          enabled: true
+          interval: "30s"
+          timeout: "10s"
+          failureThreshold: 3
+      backup:
+        enabled: true
+        schedule: "0 1 * * *"  # Daily at 1 AM
+        retention: "30d"
+        storage:
+          type: "s3"
+          location: "s3://my-backup-bucket/cluster-backups/"
+          credentials:
+            secretName: "backup-credentials"
+            namespace: "default" 

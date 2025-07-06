@@ -1,0 +1,48 @@
+# Copyright 2025
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ClusterDeployment
+metadata:
+  name: adopted-cluster-minimal
+  namespace: default
+spec:
+  template: adopted-cluster
+  adoptedCluster:
+    enabled: true
+    discoveryMode: "auto"
+    infrastructureMapping:
+      provider: "aws"
+      region: "us-west-2"
+      credentials:
+        secretName: "aws-credentials"
+        namespace: "default"
+    lifecycleManagement:
+      enabled: true
+      scaling:
+        enabled: false  # Disable scaling for minimal example
+      upgrades:
+        enabled: false  # Disable upgrades for minimal example
+      monitoring:
+        enabled: true
+        metrics:
+          - "cpu_usage_percent"
+          - "memory_usage_percent"
+        healthChecks:
+          enabled: true
+          interval: "30s"
+          timeout: "10s"
+          failureThreshold: 3
+      backup:
+        enabled: false  # Disable backup for minimal example 
