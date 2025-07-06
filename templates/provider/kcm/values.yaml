@@ -41,7 +41,7 @@ containerSecurityContext:
 
 image:
   repository: ghcr.io/wrkode/kcm/controller
-  tag: latest
+  tag: 1.1.2
   pullPolicy: IfNotPresent
 
 resources:
