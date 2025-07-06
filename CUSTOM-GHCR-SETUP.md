@@ -32,16 +32,20 @@ The following files have been updated to use your custom registry:
 export GITHUB_TOKEN=your_github_token_here
 ```
 
-### 2. Build and Push Images
+### 2. Build and Push Images and Charts
 
 ```bash
-./build-custom-images.sh
+./build-custom-all.sh
 ```
 
 This script will:
 - Login to GHCR using your token
 - Build multi-architecture images (amd64, arm64, armv7)
 - Push images to `ghcr.io/wrkode/kcm/controller:1.1.2`
+- Build and push Helm charts to `oci://ghcr.io/wrkode/kcm/charts`
+- Push both `kcm:1.1.2` and `kcm-templates:1.1.2` charts
+
+**Note**: You need to build both images AND charts. The source-controller requires the Helm charts to be available in your registry.
 
 ### 3. Install KCM with Custom Images
 
@@ -108,11 +112,32 @@ If you encounter image pull errors:
 
 ### Source-Controller Issues
 
-If the source-controller can't pull images:
+If the source-controller can't pull images or charts:
 
 1. **Check network connectivity**: Ensure your cluster can reach `ghcr.io`
 2. **Verify image existence**: Check that images exist in your registry
-3. **Check pull secrets**: If using private registry, ensure proper pull secrets are configured
+3. **Verify chart existence**: Check that Helm charts exist in your registry
+4. **Check pull secrets**: If using private registry, ensure proper pull secrets are configured
+5. **Common error**: If you see "403 Forbidden" errors for charts, make sure you've built and pushed the Helm charts using `./build-custom-all.sh`
+
+### Common Error: "403 Forbidden" for Helm Charts
+
+If you see errors like this in the source-controller logs:
+```
+failed to get 'oci://ghcr.io/wrkode/kcm/chart/kcm-templates:1.1.2': failed to authorize: failed to fetch anonymous token: unexpected status from GET request to https://ghcr.io/token?scope=repository%3Awrkode%2Fkcm%2Fchart%2Fkcm-templates%3Apull&service=ghcr.io: 403 Forbidden
+```
+
+**Solution**: You need to build and push the Helm charts to your registry:
+
+```bash
+# Build and push both images and charts
+./build-custom-all.sh
+
+# Or build charts separately
+./build-custom-charts.sh
+```
+
+This error occurs because the source-controller is trying to pull Helm charts that don't exist in your registry yet.
 
 ## Registry Structure
 
@@ -123,7 +148,10 @@ ghcr.io/wrkode/kcm/
 ├── controller:1.1.2 (multi-arch manifest)
 ├── controller:1.1.2-amd64
 ├── controller:1.1.2-arm64v8
-└── controller:1.1.2-armv7
+├── controller:1.1.2-armv7
+└── charts/
+    ├── kcm:1.1.2
+    └── kcm-templates:1.1.2
 ```
 
 ## Cleanup
