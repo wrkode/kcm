@@ -171,6 +171,24 @@ check_registry_access() {
     fi
 }
 
+# Check available chart versions
+check_available_versions() {
+    print_status "Checking available chart versions..."
+    
+    # Try to pull the chart and get available versions
+    if helm pull oci://$REGISTRY/charts/kcm --untar > /dev/null 2>&1; then
+        if [ -f "kcm/Chart.yaml" ]; then
+            CHART_VERSION_AVAILABLE=$(grep "^version:" kcm/Chart.yaml | awk '{print $2}')
+            print_success "Available chart version: $CHART_VERSION_AVAILABLE"
+            rm -rf kcm/
+        else
+            print_warning "Could not determine chart version from Chart.yaml"
+        fi
+    else
+        print_warning "Could not pull chart to check version"
+    fi
+}
+
 # Build and push controller image
 build_controller_image() {
     print_status "Building and pushing controller image..."
@@ -252,6 +270,22 @@ build_ci_images() {
 generate_installation_script() {
     print_status "Generating installation script..."
     
+    # Detect the actual chart version that was pushed
+    print_status "Detecting available chart version..."
+    CHART_VERSION_AVAILABLE=""
+    
+    # Try to pull the chart and get its version
+    if helm pull oci://$REGISTRY/charts/kcm --untar > /dev/null 2>&1; then
+        if [ -f "kcm/Chart.yaml" ]; then
+            CHART_VERSION_AVAILABLE=$(grep "^version:" kcm/Chart.yaml | awk '{print $2}')
+            rm -rf kcm/
+            print_success "Detected chart version: $CHART_VERSION_AVAILABLE"
+        fi
+    fi
+    
+    # Use detected version or fall back to CHART_VERSION
+    INSTALL_VERSION=${CHART_VERSION_AVAILABLE:-$CHART_VERSION}
+    
     cat > install-kcm-custom.sh << EOF
 #!/bin/bash
 
@@ -259,17 +293,19 @@ generate_installation_script() {
 # Generated on $(date)
 # Registry: $REGISTRY
 # Version: $VERSION
+# Chart Version: $INSTALL_VERSION
 
 set -e
 
 echo "Installing KCM from custom registry: $REGISTRY"
 echo "Version: $VERSION"
+echo "Chart Version: $INSTALL_VERSION"
 
 # Create namespace
 kubectl create namespace kcm-system --dry-run=client -o yaml | kubectl apply -f -
 
 # Install KCM using Helm
-helm install kcm oci://$REGISTRY/charts/kcm --version $CHART_VERSION -n kcm-system --create-namespace
+helm install kcm oci://$REGISTRY/charts/kcm --version $INSTALL_VERSION -n kcm-system --create-namespace
 
 echo "KCM installation completed successfully!"
 echo "You can check the status with: kubectl get pods -n kcm-system"
@@ -283,6 +319,21 @@ EOF
 generate_airgap_script() {
     print_status "Generating air-gapped installation script..."
     
+    # Use the same version detection logic
+    CHART_VERSION_AVAILABLE=""
+    
+    # Try to pull the chart and get its version
+    if helm pull oci://$REGISTRY/charts/kcm --untar > /dev/null 2>&1; then
+        if [ -f "kcm/Chart.yaml" ]; then
+            CHART_VERSION_AVAILABLE=$(grep "^version:" kcm/Chart.yaml | awk '{print $2}')
+            rm -rf kcm/
+            print_success "Detected chart version for air-gap: $CHART_VERSION_AVAILABLE"
+        fi
+    fi
+    
+    # Use detected version or fall back to CHART_VERSION
+    INSTALL_VERSION=${CHART_VERSION_AVAILABLE:-$CHART_VERSION}
+    
     cat > airgap-install.sh << EOF
 #!/bin/bash
 
@@ -290,19 +341,21 @@ generate_airgap_script() {
 # Generated on $(date)
 # Registry: $REGISTRY
 # Version: $VERSION
+# Chart Version: $INSTALL_VERSION
 
 set -e
 
 echo "Air-gapped KCM Installation"
 echo "Registry: $REGISTRY"
 echo "Version: $VERSION"
+echo "Chart Version: $INSTALL_VERSION"
 
 # Create namespace
 kubectl create namespace kcm-system --dry-run=client -o yaml | kubectl apply -f -
 
 # Download and install KCM
 echo "Downloading KCM Helm chart..."
-helm pull oci://$REGISTRY/charts/kcm --version $CHART_VERSION --untar
+helm pull oci://$REGISTRY/charts/kcm --version $INSTALL_VERSION --untar
 
 echo "Installing KCM..."
 helm install kcm ./kcm -n kcm-system --create-namespace
@@ -330,6 +383,7 @@ main() {
     validate_github_token
     login_to_ghcr
     cleanup_local_images
+    check_available_versions
     build_controller_image
     build_helm_charts
     build_ci_images
