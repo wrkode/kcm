@@ -162,7 +162,7 @@ release:
 
   footer: |
     ---
-    **Full Changelog**: https://github.com/k0rdent/kcm/compare/{{ .PreviousTag }}...{{ .Tag }}
+    **Full Changelog**: https://github.com/wrkode/kcm/compare/{{ .PreviousTag }}...{{ .Tag }}
 
   extra_files:
     - glob: ./install.yaml.out
@@ -186,8 +186,8 @@ dockers:
     build_flag_templates:
       - --label=org.opencontainers.image.title="{{ .ProjectName }} - k0rdent Cluster Manager"
       - --label=org.opencontainers.image.description="Image with k0rdent Cluster and State Management binary"
-      - --label=org.opencontainers.image.url=https://github.com/k0rdent/kcm
-      - --label=org.opencontainers.image.source=https://github.com/k0rdent/kcm
+      - --label=org.opencontainers.image.url=https://github.com/wrkode/kcm
+      - --label=org.opencontainers.image.source=https://github.com/wrkode/kcm
       - --label=org.opencontainers.image.version={{ .Env.VERSION }}
       - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
@@ -206,8 +206,8 @@ dockers:
     build_flag_templates:
       - --label=org.opencontainers.image.title="{{ .ProjectName }} - k0rdent Cluster Manager"
       - --label=org.opencontainers.image.description="Image with k0rdent Cluster and State Management binary"
-      - --label=org.opencontainers.image.url=https://github.com/k0rdent/kcm
-      - --label=org.opencontainers.image.source=https://github.com/k0rdent/kcm
+      - --label=org.opencontainers.image.url=https://github.com/wrkode/kcm
+      - --label=org.opencontainers.image.source=https://github.com/wrkode/kcm
       - --label=org.opencontainers.image.version={{ .Env.VERSION }}
       - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
@@ -227,8 +227,8 @@ dockers:
     build_flag_templates:
       - --label=org.opencontainers.image.title="{{ .ProjectName }} - k0rdent Cluster Manager"
       - --label=org.opencontainers.image.description="Image with k0rdent Cluster and State Management binary"
-      - --label=org.opencontainers.image.url=https://github.com/k0rdent/kcm
-      - --label=org.opencontainers.image.source=https://github.com/k0rdent/kcm
+      - --label=org.opencontainers.image.url=https://github.com/wrkode/kcm
+      - --label=org.opencontainers.image.source=https://github.com/wrkode/kcm
       - --label=org.opencontainers.image.version={{ .Env.VERSION }}
       - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
       - --label=org.opencontainers.image.revision={{ .FullCommit }}

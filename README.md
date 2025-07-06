@@ -16,7 +16,7 @@ Detailed documentation is available in [k0rdent Docs](https://docs.k0rdent.io)
 ### TL;DR
 
 ```bash
-helm install kcm oci://ghcr.io/k0rdent/kcm/charts/kcm --version 1.1.1 -n kcm-system --create-namespace
+helm install kcm oci://ghcr.io/wrkode/kcm/charts/kcm --version 1.1.1 -n kcm-system --create-namespace
 ```
 
 Then follow the [Deploy a cluster deployment](#create-a-clusterdeployment) guide to
@@ -53,7 +53,7 @@ see [Documentation](#documentation)
 ```bash
 export KUBECONFIG=<path-to-management-kubeconfig>
 
-helm install kcm oci://ghcr.io/k0rdent/kcm/charts/kcm --version <kcm-version> -n kcm-system --create-namespace
+helm install kcm oci://ghcr.io/wrkode/kcm/charts/kcm --version <kcm-version> -n kcm-system --create-namespace
 ```
 
 #### Extended Management configuration

@@ -7,7 +7,7 @@ admissionWebhook:
   certDir: "/tmp/k8s-webhook-server/serving-certs/"
 
 controller:
-  templatesRepoURL: "oci://ghcr.io/k0rdent/kcm/charts"
+  templatesRepoURL: "oci://ghcr.io/wrkode/kcm/charts"
   globalRegistry: ""
   globalK0sURL: ""
   k0sURLCertSecret: "" # @schema type: string; description: Name of a Secret containing K0s Download URL Root CA with ca.crt key
@@ -40,7 +40,7 @@ containerSecurityContext:
       - ALL
 
 image:
-  repository: ghcr.io/k0rdent/kcm/controller
+  repository: ghcr.io/wrkode/kcm/controller
   tag: latest
   pullPolicy: IfNotPresent
 

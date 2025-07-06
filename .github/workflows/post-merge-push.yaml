@@ -57,7 +57,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REGISTRY: ghcr.io/k0rdent/kcm
+          REGISTRY: ghcr.io/wrkode/kcm
           IMAGE_NAME: controller-ci
           VERSION: ${{ steps.version.outputs.version }}
           SKIP_SCM_RELEASE: true
@@ -68,9 +68,9 @@ jobs:
 
       - name: Prepare and push KCM template charts to the public repository
         env:
-          REGISTRY_REPO: oci://ghcr.io/k0rdent/kcm/charts-ci
+          REGISTRY_REPO: oci://ghcr.io/wrkode/kcm/charts-ci
           VERSION: ${{ steps.version.outputs.version }}
-          IMG: ghcr.io/k0rdent/kcm/controller-ci:${{ steps.version.outputs.version }}
+          IMG: ghcr.io/wrkode/kcm/controller-ci:${{ steps.version.outputs.version }}
         run: |
           make set-kcm-repo
           make kcm-chart-release

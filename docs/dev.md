@@ -8,7 +8,7 @@ a managed cluster on AWS with k0s for testing. The kind cluster acts as manageme
 ### Clone KCM repository
 
 ```bash
-git clone https://github.com/K0rdent/kcm.git && cd kcm
+git clone https://github.com/wrkode/kcm.git && cd kcm
 make help # Check available commands
 ```
 
@@ -203,7 +203,7 @@ a cluster can fetch manifests, controller image and helm charts.
 Example command:
 
 ```bash
-make CLUSTER_DEPLOYMENT_PREFIX="<your-cluster-name-prefix>" GINKGO_LABEL_FILTER="<optional>" IMG="ghcr.io/k0rdent/kcm/controller-ci:<version-from-ci>" VERSION=<version-from-ci> REGISTRY_REPO="oci://ghcr.io/k0rdent/kcm/charts-ci"  set-kcm-version test-e2e
+make CLUSTER_DEPLOYMENT_PREFIX="<your-cluster-name-prefix>" GINKGO_LABEL_FILTER="<optional>" IMG="ghcr.io/wrkode/kcm/controller-ci:<version-from-ci>" VERSION=<version-from-ci> REGISTRY_REPO="oci://ghcr.io/wrkode/kcm/charts-ci"  set-kcm-version test-e2e
 ```
 
 Substitute with a proper version from the CI run.
@@ -255,7 +255,7 @@ CLUSTER_NAME=example-e2e-test make dev-aws-nuke
 
 The `release.yml` is triggered via a release, it builds and packages the
 Helm charts images and uploads them.  Images and charts are
-uploaded to `ghcr.io/k0rdent/kcm`.
+uploaded to `ghcr.io/wrkode/kcm`.
 
 ### Build and Test (`build_test.yml`)
 
@@ -273,12 +273,12 @@ This job runs the controller unit tests, linters and other checks.
 #### Build and Push Artifacts When Required
 
 This job builds and packages the Helm charts and controller images uploading them
-to `ghcr.io/k0rdent/kcm` so that the jobs within the E2E phase have access to
+to `ghcr.io/wrkode/kcm` so that the jobs within the E2E phase have access to
 them. The job is conditional and runs only if `test-e2e` label is set on a PR and another job,
 `authorize`, has been approved. The latter starts only if the former is set.
 
-- CI charts are uploaded to `ghcr.io/k0rdent/kcm/charts-ci`
-- KCM Controller image is uploaded to `ghcr.io/k0rdent/kcm/controller-ci`
+- CI charts are uploaded to `ghcr.io/wrkode/kcm/charts-ci`
+- KCM Controller image is uploaded to `ghcr.io/wrkode/kcm/controller-ci`
 
 All other tests within the workflow require this job to pass before they are
 scheduled to run.
@@ -393,7 +393,7 @@ clouds:
 
 One would typically create a Secret (for example, openstack-cloud-config) in the kcm-system namespace with the clouds.yaml. Credential object references the secret and the CAPO controllers references this Credential to provision resources.
 
-When you deploy a new cluster, KCM automatically parses the previously created Kubernetes Secret’s data to build a cloud.conf. This cloud-config is mounted inside the CCM and/or CSI pods enabling them to manage load balancers, floating IPs, etc.
+When you deploy a new cluster, KCM automatically parses the previously created Kubernetes Secret's data to build a cloud.conf. This cloud-config is mounted inside the CCM and/or CSI pods enabling them to manage load balancers, floating IPs, etc.
 Refer to [configuring OpenStack CCM](https://github.com/kubernetes/cloud-provider-openstack/blob/master/docs/openstack-cloud-controller-manager/using-openstack-cloud-controller-manager.md#config-openstack-cloud-controller-manager) for more details.
 
 Here's an example of the generated cloud.conf:

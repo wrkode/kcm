@@ -9,7 +9,7 @@ IMG_TAG = $(shell echo $(IMG) | cut -d: -f2)
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.33.0
 
-KCM_STABLE_VERSION = $(shell git ls-remote --tags --sort v:refname --exit-code --refs https://github.com/k0rdent/kcm | grep -v -e "-rc[0-9]\+$$" | tail -n1 | cut -d '/' -f3)
+KCM_STABLE_VERSION = $(shell git ls-remote --tags --sort v:refname --exit-code --refs https://github.com/wrkode/kcm | grep -v -e "-rc[0-9]\+$$" | tail -n1 | cut -d '/' -f3)
 
 HOSTOS := $(shell go env GOHOSTOS)
 HOSTARCH := $(shell go env GOHOSTARCH)
@@ -38,6 +38,11 @@ SHELL = /usr/bin/env bash -o pipefail
 TEMPLATES_DIR := templates
 PROVIDER_TEMPLATES_DIR := $(TEMPLATES_DIR)/provider
 CLUSTER_TEMPLATES_DIR := $(TEMPLATES_DIR)/cluster
+
+# Registry configuration - can be overridden via environment variables
+REGISTRY ?= ghcr.io/wrkode/kcm
+REGISTRY_REPO ?= oci://ghcr.io/wrkode/kcm/charts
+KCM_REPO_URL ?= oci://ghcr.io/wrkode/kcm/charts
 
 .PHONY: all
 all: build
@@ -377,7 +382,7 @@ dev-push: docker-build helm-push
 dev-templates: templates-generate
 	$(KUBECTL) -n $(NAMESPACE) apply --force -f $(PROVIDER_TEMPLATES_DIR)/kcm-templates/files/templates
 
-KCM_REPO_URL ?= oci://ghcr.io/k0rdent/kcm/charts
+KCM_REPO_URL ?= oci://ghcr.io/wrkode/kcm/charts
 KCM_REPO_NAME ?= kcm
 
 .PHONY: stable-templates
@@ -392,7 +397,7 @@ stable-templates: yq
 		"spec:" \
 		"  type: oci" \
 		"  url: $(KCM_REPO_URL)" | $(KUBECTL) -n $(NAMESPACE) create -f -
-	@curl -s "https://api.github.com/repos/k0rdent/kcm/contents/templates/provider/kcm-templates/files/templates?ref=$(KCM_STABLE_VERSION)" | \
+	@curl -s "https://api.github.com/repos/wrkode/kcm/contents/templates/provider/kcm-templates/files/templates?ref=$(KCM_STABLE_VERSION)" | \
 	jq -r '.[].download_url' | while read url; do \
 		curl -s "$$url" | \
 		$(YQ) '.spec.helm.chartSpec.sourceRef.name = "$(KCM_REPO_NAME)"' | \
