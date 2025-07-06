@@ -1,0 +1,140 @@
+# Copyright 2025
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# =============================================================================
+# Minimal AKS Adopted Cluster Example
+# =============================================================================
+#
+# This example shows the minimal steps required to adopt an existing AKS cluster
+# into KCM for lifecycle management.
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Step 1: Kubeconfig Secret
+# -----------------------------------------------------------------------------
+# This secret contains the kubeconfig for your existing AKS cluster.
+# Get your kubeconfig with: az aks get-credentials --resource-group <rg> --name <cluster>
+#
+apiVersion: v1
+kind: Secret
+metadata:
+  name: existing-aks-kubeconfig
+  namespace: default
+type: Opaque
+stringData:
+  # Replace this with your actual kubeconfig content
+  value: |
+    apiVersion: v1
+    kind: Config
+    clusters:
+    - cluster:
+        certificate-authority-data: <your-ca-data>
+        server: https://<your-cluster>.hcp.eastus.azmk8s.io:443
+      name: <your-cluster>
+    contexts:
+    - context:
+        cluster: <your-cluster>
+        user: clusterUser_<resource-group>_<your-cluster>
+      name: <your-cluster>
+    current-context: <your-cluster>
+    users:
+    - name: clusterUser_<resource-group>_<your-cluster>
+      user:
+        client-certificate-data: <your-cert-data>
+        client-key-data: <your-key-data>
+        token: <your-token>
+
+# -----------------------------------------------------------------------------
+# Step 2: Credential
+# -----------------------------------------------------------------------------
+# This credential references the kubeconfig secret.
+---
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: Credential
+metadata:
+  name: adopted-aks-credential
+  namespace: default
+spec:
+  description: "Credential for adopted AKS cluster"
+  identityRef:
+    apiVersion: v1
+    kind: Secret
+    name: existing-aks-kubeconfig
+    namespace: default
+
+# -----------------------------------------------------------------------------
+# Step 3: ClusterDeployment
+# -----------------------------------------------------------------------------
+# This triggers the adoption process.
+---
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ClusterDeployment
+metadata:
+  name: adopted-aks-cluster
+  namespace: default
+spec:
+  template: adopted-cluster-1-0-1
+  credential: adopted-aks-credential
+  propagateCredentials: true
+  
+  adoptedCluster:
+    enabled: true
+    discoveryMode: "auto"  # or "manual"
+    infrastructureMapping:
+      provider: "azure"
+      region: "eastus"  # Replace with your cluster region
+      credentials:
+        secretName: "azure-credentials"  # Your Azure credentials secret
+        namespace: "default"
+    
+    lifecycleManagement:
+      enabled: true
+      scaling:
+        enabled: true
+        autoScaling: true
+        minNodes: 2
+        maxNodes: 10
+      monitoring:
+        enabled: true
+        metrics:
+          - "cpu_usage_percent"
+          - "memory_usage_percent"
+      backup:
+        enabled: true
+        schedule: "0 1 * * *"  # Daily at 1 AM
+
+# =============================================================================
+# How it works:
+# =============================================================================
+#
+# 1. KCM connects to your existing AKS cluster using the kubeconfig
+# 2. Discovers existing infrastructure (nodes, node pools, etc.)
+# 3. Creates CAPI resources to represent the adopted cluster
+# 4. Enables lifecycle management (scaling, monitoring, backup)
+# 5. Manages the cluster through KCM's declarative approach
+#
+# =============================================================================
+# Usage:
+# =============================================================================
+#
+# 1. Replace the kubeconfig with your actual AKS cluster kubeconfig
+# 2. Update the region to match your cluster
+# 3. Apply the resources:
+#    kubectl apply -f aks-adopted-cluster-minimal.yaml
+# 4. Monitor adoption:
+#    kubectl get clusterdeployment adopted-aks-cluster
+#    kubectl describe clusterdeployment adopted-aks-cluster
+#
+# ============================================================================= 

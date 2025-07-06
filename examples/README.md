@@ -13,6 +13,35 @@ KCM provides a declarative way to create and manage AKS clusters using Kubernete
 3. **Infrastructure Provisioning**: Azure Service Operator (ASO) creates the actual AKS resources
 4. **Lifecycle Management**: KCM monitors and manages the cluster lifecycle
 
+### Examples
+
+#### 1. Minimal AKS Cluster (`aks-cluster-minimal.yaml`)
+Shows the essential components needed to create a basic AKS cluster:
+- Azure credentials (Secret + Credential)
+- Basic ClusterDeployment with minimal configuration
+- System and user node pools
+
+#### 2. Comprehensive AKS Cluster (`aks-cluster-example.yaml`)
+Demonstrates advanced features:
+- Complete AKS configuration with all options
+- Service deployment after cluster creation
+- IPAM (IP Address Management) configuration
+- Detailed workflow explanation and usage instructions
+
+#### 3. Adopted AKS Cluster (`aks-adopted-cluster-minimal.yaml`)
+Shows how to adopt an existing AKS cluster into KCM:
+- Kubeconfig secret for existing cluster access
+- Credential referencing the kubeconfig
+- ClusterDeployment with adopted cluster configuration
+- Lifecycle management for existing infrastructure
+
+#### 4. Comprehensive Adopted AKS Cluster (`aks-adopted-cluster-example.yaml`)
+Demonstrates full adoption with advanced features:
+- Complete adoption process with detailed explanations
+- Infrastructure discovery and mapping
+- Advanced lifecycle management (scaling, upgrades, monitoring, backup)
+- Service deployment to adopted clusters
+
 ### Architecture
 
 ```
@@ -210,9 +239,150 @@ kubectl get helmrelease my-aks-cluster
    - Set up alerts for cluster health and performance
    - Use KCM's service deployment for monitoring stacks
 
+## Adopted Cluster Examples
+
+### Overview
+
+KCM can also adopt existing Kubernetes clusters (including AKS clusters) for lifecycle management. This allows you to:
+
+1. **Adopt Existing Clusters**: Bring existing clusters under KCM management
+2. **Infrastructure Discovery**: Automatically discover existing infrastructure
+3. **Lifecycle Management**: Apply KCM's lifecycle management to adopted clusters
+4. **Unified Management**: Manage both new and existing clusters through KCM
+
+### Adoption Process
+
+The adoption process involves:
+
+1. **Kubeconfig Access**: Provide kubeconfig for the existing cluster
+2. **Infrastructure Discovery**: KCM discovers existing infrastructure
+3. **CAPI Integration**: Creates CAPI resources representing the adopted cluster
+4. **Lifecycle Management**: Enables scaling, monitoring, backup, and upgrades
+
+### Key Components
+
+#### 1. Kubeconfig Secret
+Contains the kubeconfig for accessing the existing cluster:
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: existing-cluster-kubeconfig
+type: Opaque
+stringData:
+  value: |
+    # Your cluster kubeconfig content
+```
+
+#### 2. Adopted Cluster Credential
+References the kubeconfig secret:
+```yaml
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: Credential
+metadata:
+  name: adopted-cluster-credential
+spec:
+  identityRef:
+    apiVersion: v1
+    kind: Secret
+    name: existing-cluster-kubeconfig
+```
+
+#### 3. ClusterDeployment with Adopted Configuration
+```yaml
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ClusterDeployment
+metadata:
+  name: adopted-cluster
+spec:
+  template: adopted-cluster-1-0-1
+  credential: adopted-cluster-credential
+  adoptedCluster:
+    enabled: true
+    discoveryMode: "auto"  # or "manual"
+    infrastructureMapping:
+      provider: "azure"
+      region: "eastus"
+    lifecycleManagement:
+      enabled: true
+      scaling:
+        enabled: true
+      monitoring:
+        enabled: true
+      backup:
+        enabled: true
+```
+
+### Discovery Modes
+
+#### Auto Discovery
+KCM automatically discovers infrastructure:
+```yaml
+adoptedCluster:
+  discoveryMode: "auto"
+  infrastructureMapping:
+    provider: "azure"
+    region: "eastus"
+```
+
+#### Manual Discovery
+Manually map existing nodes to CAPI resources:
+```yaml
+adoptedCluster:
+  discoveryMode: "manual"
+  infrastructureMapping:
+    provider: "azure"
+    region: "eastus"
+    nodeMapping:
+      - nodeName: "aks-agentpool-12345678-vmss000000"
+        machineName: "worker-machine-1"
+```
+
+### Lifecycle Management Features
+
+#### Scaling
+```yaml
+lifecycleManagement:
+  scaling:
+    enabled: true
+    autoScaling: true
+    minNodes: 2
+    maxNodes: 10
+    nodeGroups:
+      - name: "worker-pool"
+        minNodes: 2
+        maxNodes: 8
+```
+
+#### Monitoring
+```yaml
+lifecycleManagement:
+  monitoring:
+    enabled: true
+    metrics:
+      - "cpu_usage_percent"
+      - "memory_usage_percent"
+    healthChecks:
+      enabled: true
+      interval: "30s"
+```
+
+#### Backup
+```yaml
+lifecycleManagement:
+  backup:
+    enabled: true
+    schedule: "0 1 * * *"
+    retention: "30d"
+    storage:
+      type: "azure"
+      location: "https://storage.blob.core.windows.net/backups/"
+```
+
 ### Related Resources
 
 - [KCM Documentation](../docs/)
 - [Azure AKS Templates](../templates/cluster/azure-aks/)
+- [Adopted Cluster Templates](../templates/cluster/adopted-cluster/)
 - [Cluster API Documentation](https://cluster-api.sigs.k8s.io/)
 - [Azure Service Operator](https://azure.github.io/azure-service-operator/) 
