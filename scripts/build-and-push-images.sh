@@ -71,6 +71,25 @@ check_prerequisites() {
     print_success "Prerequisites check passed"
 }
 
+# Clean up existing local images
+cleanup_local_images() {
+    print_status "Cleaning up existing local images..."
+    
+    # Remove any existing localhost/kcm/controller images
+    if docker images | grep -q "localhost/kcm/controller"; then
+        print_status "Removing existing localhost/kcm/controller images..."
+        docker rmi $(docker images | grep "localhost/kcm/controller" | awk '{print $3}') 2>/dev/null || true
+    fi
+    
+    # Remove any existing images with our registry name
+    if docker images | grep -q "$REGISTRY/controller"; then
+        print_status "Removing existing $REGISTRY/controller images..."
+        docker rmi $(docker images | grep "$REGISTRY/controller" | awk '{print $3}') 2>/dev/null || true
+    fi
+    
+    print_success "Cleanup completed"
+}
+
 # Validate GitHub token
 validate_github_token() {
     if [ -z "$GITHUB_TOKEN" ]; then
@@ -159,6 +178,9 @@ build_controller_image() {
     # Set environment variables for the build
     export REGISTRY=$REGISTRY
     export VERSION=$VERSION
+    export IMG="$REGISTRY/controller:$VERSION"
+    
+    print_status "Building image: $IMG"
     
     # Build the image
     make docker-build
@@ -169,6 +191,8 @@ build_controller_image() {
         print_error "Failed to build controller image"
         exit 1
     fi
+    
+    print_status "Pushing image: $IMG"
     
     # Push the image
     make docker-push
@@ -208,10 +232,13 @@ build_ci_images() {
     export REGISTRY=$REGISTRY
     export VERSION=$VERSION
     export REGISTRY_REPO="oci://$REGISTRY/charts-ci"
+    export IMG="$REGISTRY/controller-ci:$VERSION"
     
-    # Build and push CI images
-    make docker-build-ci
-    make docker-push-ci
+    print_status "Building CI image: $IMG"
+    
+    # Build and push CI images using the same targets but with different IMG
+    make docker-build
+    make docker-push
     
     if [ $? -eq 0 ]; then
         print_success "CI images built and pushed successfully"
@@ -302,6 +329,7 @@ main() {
     check_prerequisites
     validate_github_token
     login_to_ghcr
+    cleanup_local_images
     build_controller_image
     build_helm_charts
     build_ci_images
