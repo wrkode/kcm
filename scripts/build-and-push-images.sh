@@ -63,7 +63,35 @@ check_prerequisites() {
         exit 1
     fi
     
+    # Check if curl is available (for token validation)
+    if ! command -v curl &> /dev/null; then
+        print_warning "curl is not available, skipping token validation"
+    fi
+    
     print_success "Prerequisites check passed"
+}
+
+# Validate GitHub token
+validate_github_token() {
+    if [ -z "$GITHUB_TOKEN" ]; then
+        return 0  # Skip validation if no token set
+    fi
+    
+    if ! command -v curl &> /dev/null; then
+        print_warning "curl not available, skipping token validation"
+        return 0
+    fi
+    
+    print_status "Validating GitHub token..."
+    
+    # Test the token by making a request to GitHub API
+    if curl -s -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/user > /dev/null 2>&1; then
+        print_success "GitHub token is valid"
+    else
+        print_error "Invalid GitHub token or network error"
+        print_status "Please check your GITHUB_TOKEN and try again"
+        exit 1
+    fi
 }
 
 # Login to GHCR
@@ -78,14 +106,49 @@ login_to_ghcr() {
         exit 1
     fi
     
-    # Login to GHCR
-    echo "$GITHUB_TOKEN" | docker login ghcr.io -u wrkode --password-stdin
+    # Check if GITHUB_USERNAME is set
+    if [ -z "$GITHUB_USERNAME" ]; then
+        print_error "GITHUB_USERNAME environment variable is not set"
+        print_status "Please set it with: export GITHUB_USERNAME=your_github_username"
+        print_status "Example: export GITHUB_USERNAME=wrkode"
+        exit 1
+    fi
     
-    if [ $? -eq 0 ]; then
+    print_status "Using GitHub username: $GITHUB_USERNAME"
+    print_status "Registry: $REGISTRY"
+    
+    # Login to GHCR
+    if echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_USERNAME" --password-stdin; then
         print_success "Successfully logged in to GHCR"
     else
         print_error "Failed to login to GHCR"
+        print_status "Please check:"
+        print_status "1. Your GITHUB_TOKEN is valid and has the correct permissions"
+        print_status "2. Your GitHub username is correct"
+        print_status "3. You have write access to the registry"
+        print_status ""
+        print_status "You can also try setting GITHUB_USERNAME explicitly:"
+        print_status "export GITHUB_USERNAME=your_github_username"
         exit 1
+    fi
+}
+
+# Check registry access
+check_registry_access() {
+    print_status "Checking registry access..."
+    
+    # Extract registry name from REGISTRY variable
+    REGISTRY_NAME=$(echo "$REGISTRY" | sed 's|ghcr.io/||')
+    
+    print_status "Registry: $REGISTRY"
+    print_status "Registry name: $REGISTRY_NAME"
+    
+    # Check if we can access the registry
+    if docker pull "$REGISTRY/controller:latest" > /dev/null 2>&1; then
+        print_success "Registry access confirmed"
+    else
+        print_warning "Cannot pull from registry (this is normal for new registries)"
+        print_status "Will attempt to push to create the registry"
     fi
 }
 
@@ -237,6 +300,7 @@ main() {
     echo
     
     check_prerequisites
+    validate_github_token
     login_to_ghcr
     build_controller_image
     build_helm_charts

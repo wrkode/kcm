@@ -44,8 +44,9 @@ To create a token:
 git clone https://github.com/wrkode/kcm.git
 cd kcm
 
-# Set your GitHub token
+# Set your GitHub credentials
 export GITHUB_TOKEN=your_github_token_here
+export GITHUB_USERNAME=your_github_username_here
 ```
 
 ### 2. Run the build script
@@ -92,6 +93,7 @@ If you want to use a different registry name, you can:
    ```bash
    export REGISTRY="ghcr.io/your-username/your-repo"
    export VERSION="v1.0.0"
+   export GITHUB_USERNAME="your-username"
    ./scripts/build-and-push-images.sh
    ```
 
@@ -125,7 +127,7 @@ If you prefer to build manually instead of using the script:
 ### 1. Login to GHCR
 
 ```bash
-echo "$GITHUB_TOKEN" | docker login ghcr.io -u your-username --password-stdin
+echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_USERNAME" --password-stdin
 ```
 
 ### 2. Build and push controller image
