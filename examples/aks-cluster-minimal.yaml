@@ -1,0 +1,147 @@
+# Copyright 2025
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# =============================================================================
+# Minimal AKS Cluster Example
+# =============================================================================
+#
+# This example shows the minimal configuration required to create an AKS cluster
+# using KCM. It demonstrates the core workflow:
+#
+# 1. Azure credentials (Secret + Credential)
+# 2. ClusterDeployment with AKS template
+# 3. KCM creates the cluster infrastructure
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Step 1: Azure Credentials
+# -----------------------------------------------------------------------------
+apiVersion: v1
+kind: Secret
+metadata:
+  name: azure-aks-creds
+  namespace: default
+stringData:
+  AZURE_CLIENT_ID: "your-client-id"
+  AZURE_CLIENT_SECRET: "your-client-secret"
+  AZURE_SUBSCRIPTION_ID: "your-subscription-id"
+  AZURE_TENANT_ID: "your-tenant-id"
+type: Opaque
+---
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: Credential
+metadata:
+  name: azure-aks-creds
+  namespace: default
+spec:
+  description: "Azure credentials for AKS cluster"
+  identityRef:
+    apiVersion: v1
+    kind: Secret
+    name: azure-aks-creds
+    namespace: default
+
+# -----------------------------------------------------------------------------
+# Step 2: ClusterDeployment
+# -----------------------------------------------------------------------------
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ClusterDeployment
+metadata:
+  name: my-aks-cluster
+  namespace: default
+spec:
+  # References the AKS template
+  template: azure-aks-1-0-1
+  
+  # References the credential
+  credential: azure-aks-creds
+  
+  # Propagate credentials to the cluster
+  propagateCredentials: true
+  
+  # Cluster configuration
+  config:
+    # Azure region
+    location: "eastus"
+    
+    # Kubernetes version
+    kubernetes:
+      version: "v1.31.1"
+      networkPlugin: "azure"
+      networkPolicy: "azure"
+    
+    # Network configuration
+    clusterNetwork:
+      pods:
+        cidrBlocks:
+        - "10.244.0.0/16"
+      services:
+        cidrBlocks:
+        - "10.96.0.0/12"
+    
+    dnsServiceIP: "10.96.0.10"
+    
+    # Node pools
+    machinePools:
+      # System node pool (required)
+      system:
+        count: 3
+        vmSize: "Standard_D2s_v3"
+        enableNodePublicIP: false
+        maxPods: 110
+        osDiskSizeGB: 128
+        type: VirtualMachineScaleSets
+      
+      # User node pool (optional)
+      user:
+        count: 2
+        vmSize: "Standard_D4s_v3"
+        enableNodePublicIP: false
+        maxPods: 110
+        osDiskSizeGB: 128
+        type: VirtualMachineScaleSets
+        autoscaling:
+          enabled: true
+          minCount: 2
+          maxCount: 10
+
+# =============================================================================
+# How it works:
+# =============================================================================
+#
+# 1. KCM validates the ClusterTemplate and Credential
+# 2. Creates a HelmRelease for the AKS cluster
+# 3. Generates CAPI resources:
+#    - Cluster (cluster.x-k8s.io/v1beta1)
+#    - AzureASOManagedCluster (infrastructure.cluster.x-k8s.io/v1alpha1)
+#    - AzureASOManagedControlPlane (infrastructure.cluster.x-k8s.io/v1alpha1)
+#    - MachinePool resources for each node pool
+# 4. Azure ASO (Azure Service Operator) creates the actual AKS resources
+# 5. KCM monitors the process and updates status conditions
+#
+# =============================================================================
+# Usage:
+# =============================================================================
+#
+# 1. Replace Azure credentials with your values
+# 2. Apply the resources:
+#    kubectl apply -f aks-cluster-minimal.yaml
+# 3. Monitor the deployment:
+#    kubectl get clusterdeployment my-aks-cluster
+#    kubectl describe clusterdeployment my-aks-cluster
+# 4. Check cluster status:
+#    kubectl get cluster,azureasomanagedcluster,machinepool
+#
+# ============================================================================= 

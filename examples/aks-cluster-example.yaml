@@ -1,0 +1,357 @@
+# Copyright 2025
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# =============================================================================
+# AKS Cluster Creation Example with KCM
+# =============================================================================
+#
+# This example demonstrates how to create an Azure Kubernetes Service (AKS) 
+# cluster using KCM (Kubernetes Cluster Manager). The workflow involves:
+#
+# 1. Creating Azure credentials (Secret + Credential resource)
+# 2. Creating a ClusterDeployment that references an AKS template
+# 3. KCM controller processes the deployment and creates:
+#    - Azure Resource Group
+#    - AKS Managed Cluster
+#    - System and User node pools
+#    - CAPI (Cluster API) resources for lifecycle management
+#
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Step 1: Azure Credentials Secret
+# -----------------------------------------------------------------------------
+# This secret contains the Azure service principal credentials needed to create
+# and manage AKS resources. These credentials must have appropriate permissions
+# for AKS cluster creation.
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: azure-aks-credentials
+  namespace: default
+  labels:
+    k0rdent.mirantis.com/component: "kcm"
+stringData:
+  AZURE_CLIENT_ID: "your-azure-client-id"
+  AZURE_CLIENT_SECRET: "your-azure-client-secret"
+  AZURE_SUBSCRIPTION_ID: "your-azure-subscription-id"
+  AZURE_TENANT_ID: "your-azure-tenant-id"
+type: Opaque
+
+# -----------------------------------------------------------------------------
+# Step 2: Credential Resource
+# -----------------------------------------------------------------------------
+# The Credential resource references the secret and provides a standardized way
+# for KCM to access cloud provider credentials.
+---
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: Credential
+metadata:
+  name: azure-aks-credentials
+  namespace: default
+spec:
+  description: "Azure AKS credentials for cluster creation"
+  identityRef:
+    apiVersion: v1
+    kind: Secret
+    name: azure-aks-credentials
+    namespace: default
+
+# -----------------------------------------------------------------------------
+# Step 3: ClusterDeployment
+# -----------------------------------------------------------------------------
+# This is the main resource that triggers AKS cluster creation. KCM will:
+# 1. Validate the template and credentials
+# 2. Create a Helm release for the AKS cluster
+# 3. Generate CAPI resources (Cluster, AzureASOManagedCluster, etc.)
+# 4. Monitor the cluster creation process
+---
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ClusterDeployment
+metadata:
+  name: my-aks-cluster
+  namespace: default
+  labels:
+    environment: production
+    team: platform
+spec:
+  # References the AKS template that defines the cluster structure
+  template: azure-aks-1-0-1
+  
+  # References the credential resource created above
+  credential: azure-aks-credentials
+  
+  # Whether to propagate credentials to the created cluster for CCM
+  propagateCredentials: true
+  
+  # Configuration for the AKS cluster
+  config:
+    # Cluster metadata
+    clusterLabels:
+      environment: production
+      team: platform
+      managed-by: kcm
+    
+    clusterAnnotations:
+      kcm.io/created-by: "kcm-controller"
+      kcm.io/template-version: "1.0.1"
+    
+    # AKS-specific configuration
+    location: "eastus"
+    
+    # Kubernetes version for the cluster
+    kubernetes:
+      version: "v1.31.1"
+      networkPlugin: "azure"
+      networkPolicy: "azure"
+    
+    # Network configuration
+    clusterNetwork:
+      pods:
+        cidrBlocks:
+        - "10.244.0.0/16"
+      services:
+        cidrBlocks:
+        - "10.96.0.0/12"
+    
+    dnsServiceIP: "10.96.0.10"
+    
+    # API Server access configuration
+    apiServerAccessProfile:
+      authorizedIPRanges: []
+      disableRunCommand: false
+      enablePrivateCluster: false
+      enablePrivateClusterPublicFQDN: false
+      privateDNSZone: system
+    
+    # Auto-upgrade configuration
+    autoUpgradeProfile:
+      nodeOSUpgradeChannel: "None"
+      upgradeChannel: "none"
+    
+    # Security profile
+    securityProfile:
+      azureKeyVaultKms:
+        enabled: false
+      defender:
+        securityMonitoring:
+          enabled: false
+      imageCleaner:
+        enabled: false
+        intervalHours: 1
+      workloadIdentity:
+        enabled: false
+    
+    # Service mesh configuration
+    serviceMeshProfile:
+      mode: Disabled
+    
+    # SKU configuration
+    sku:
+      name: Base
+      tier: Free
+    
+    # Machine pools configuration
+    machinePools:
+      # System node pool (for system workloads)
+      system:
+        count: 3
+        vmSize: "Standard_D2s_v3"
+        enableNodePublicIP: false
+        maxPods: 110
+        osDiskSizeGB: 128
+        type: VirtualMachineScaleSets
+        autoscaling:
+          enabled: false
+          minCount: 2
+          maxCount: 5
+        nodeLabels:
+          node-role.kubernetes.io/system: "true"
+        nodeTaints: []
+      
+      # User node pool (for application workloads)
+      user:
+        count: 2
+        vmSize: "Standard_D4s_v3"
+        enableNodePublicIP: false
+        maxPods: 110
+        osDiskSizeGB: 128
+        type: VirtualMachineScaleSets
+        autoscaling:
+          enabled: true
+          minCount: 2
+          maxCount: 10
+        nodeLabels:
+          node-role.kubernetes.io/worker: "true"
+        nodeTaints: []
+    
+    # Azure Monitor configuration
+    azureMonitorProfile:
+      metrics:
+        enabled: false
+    
+    # OIDC issuer profile
+    oidcIssuerProfile:
+      enabled: false
+
+# -----------------------------------------------------------------------------
+# Step 4: Service Deployment (Optional)
+# -----------------------------------------------------------------------------
+# You can also deploy services to the cluster after it's created by adding
+# a serviceSpec to the ClusterDeployment. This example shows how to deploy
+# a monitoring stack.
+---
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ClusterDeployment
+metadata:
+  name: my-aks-cluster-with-services
+  namespace: default
+spec:
+  template: azure-aks-1-0-1
+  credential: azure-aks-credentials
+  propagateCredentials: true
+  
+  # Service specification for deploying additional services
+  serviceSpec:
+    services:
+      - template: monitoring-stack
+        namespace: monitoring
+        syncMode: Continuous
+        driftDetection:
+          enabled: true
+          interval: 5m
+        healthChecks:
+          - name: prometheus-ready
+            type: http
+            url: http://prometheus:9090/-/ready
+            interval: 30s
+            timeout: 10s
+            failureThreshold: 3
+          - name: grafana-ready
+            type: http
+            url: http://grafana:3000/api/health
+            interval: 30s
+            timeout: 10s
+            failureThreshold: 3
+    
+    # Service deployment configuration
+    priority: 100
+    stopOnConflict: true
+    reload: false
+    continueOnError: false
+    
+    # Template resource references for service deployment
+    templateResourceRefs:
+      - identifier: "MonitoringConfig"
+        resource:
+          apiVersion: v1
+          kind: ConfigMap
+          name: monitoring-config
+          namespace: default
+
+# -----------------------------------------------------------------------------
+# Step 5: IPAM Configuration (Optional)
+# -----------------------------------------------------------------------------
+# For advanced networking scenarios, you can use IPAM (IP Address Management)
+# to allocate specific IP ranges for your cluster.
+---
+apiVersion: k0rdent.mirantis.com/v1beta1
+kind: ClusterDeployment
+metadata:
+  name: my-aks-cluster-with-ipam
+  namespace: default
+spec:
+  template: azure-aks-1-0-1
+  credential: azure-aks-credentials
+  propagateCredentials: true
+  
+  # IPAM configuration for network allocation
+  ipamClaim:
+    clusterIPAMClaimSpec:
+      cluster: my-aks-cluster-with-ipam
+      network:
+        pods:
+          cidrBlocks:
+          - "10.244.0.0/16"
+        services:
+          cidrBlocks:
+          - "10.96.0.0/12"
+        nodes:
+          cidrBlocks:
+          - "10.0.0.0/16"
+  
+  config:
+    location: "eastus"
+    machinePools:
+      system:
+        count: 3
+        vmSize: "Standard_D2s_v3"
+      user:
+        count: 2
+        vmSize: "Standard_D4s_v3"
+
+# =============================================================================
+# Workflow Explanation
+# =============================================================================
+#
+# When you apply this ClusterDeployment, KCM will:
+#
+# 1. **Validation Phase**:
+#    - Validates the ClusterTemplate exists and is valid
+#    - Validates the Credential is ready and accessible
+#    - Validates the configuration against the template schema
+#
+# 2. **Helm Release Creation**:
+#    - Creates a HelmRelease that references the AKS chart
+#    - The chart contains templates for AzureASOManagedCluster,
+#      AzureASOManagedControlPlane, and MachinePool resources
+#
+# 3. **Infrastructure Provisioning**:
+#    - Azure Resource Group is created
+#    - AKS Managed Cluster is provisioned
+#    - System and User node pools are created
+#    - Network configuration is applied
+#
+# 4. **CAPI Integration**:
+#    - CAPI Cluster resource is created
+#    - CAPI MachinePool resources are created for each node pool
+#    - Infrastructure resources are linked to CAPI resources
+#
+# 5. **Monitoring and Status**:
+#    - KCM monitors the cluster creation process
+#    - Status conditions are updated (Ready, InfrastructureReady, etc.)
+#    - Events are generated for important milestones
+#
+# 6. **Service Deployment** (if specified):
+#    - Services are deployed to the cluster after it's ready
+#    - Sveltos Profile manages the service lifecycle
+#    - Health checks ensure services are running correctly
+#
+# =============================================================================
+# Usage Instructions
+# =============================================================================
+#
+# 1. Replace the Azure credentials in the Secret with your actual values
+# 2. Apply the Secret and Credential resources first
+# 3. Apply the ClusterDeployment resource
+# 4. Monitor the cluster creation:
+#    kubectl get clusterdeployment my-aks-cluster -o yaml
+#    kubectl describe clusterdeployment my-aks-cluster
+# 5. Check the created CAPI resources:
+#    kubectl get cluster,azureasomanagedcluster,machinepool
+# 6. Get the kubeconfig for the created cluster:
+#    kubectl get secret my-aks-cluster-kubeconfig -o jsonpath='{.data.value}' | base64 -d
+#
+# ============================================================================= 
